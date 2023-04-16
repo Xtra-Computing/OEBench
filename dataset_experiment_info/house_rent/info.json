@@ -1,0 +1,5 @@
+{
+    "schema": "schema.json",
+    "data": "dataset/give_me_some_credit.csv",
+    "task": "regression"
+}

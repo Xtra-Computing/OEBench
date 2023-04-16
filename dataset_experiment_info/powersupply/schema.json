@@ -1,0 +1,9 @@
+{
+    "numerical": ["attribute1", "attribute2", "attribute3", "attribute4", "attribute5", "attribute6", "attribute7", "attribute8"],
+    "categorical": [],
+    "target": ["class"],
+    "timestamp": [],
+    "null": [],
+    "window size": 360,
+    "unnecessary": []
+}
