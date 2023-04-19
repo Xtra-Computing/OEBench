@@ -2,6 +2,8 @@
 
 This data processing pipeline is specifically designed for open environment learning, providing a comprehensive analysis of datasets, including missing values statistics, anomaly detection, multi-dimensional and one-dimensional drift detection, and concept drift detection. The pipeline is designed to process multiple datasets and provide a detailed report on various metrics.
 
+The whole project can be downloaded from https://drive.google.com/file/d/14I-QaquIefdaEChEXg_mxDHVlfHHiO9y/view?usp=share_link
+
 ## Table of Contents
 
 - [Dependencies](#dependencies)
