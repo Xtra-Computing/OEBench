@@ -8,10 +8,10 @@ warnings.simplefilter("ignore")
 from sklearn.neighbors import KDTree
 from sklearn.utils.random import sample_without_replacement
 
-from keras import backend as K
-from keras.models import Model
-from keras.layers import Input, Dense, Layer
-from keras.callbacks import ModelCheckpoint
+from tensorflow.keras import backend as K
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Dense, Layer
+from tensorflow.keras.callbacks import ModelCheckpoint
 
 MAX_INT = np.iinfo(np.int32).max
 
