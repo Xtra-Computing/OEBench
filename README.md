@@ -32,11 +32,6 @@ This project requires the following Python packages:
 - copulas
 - menelaus (need Python >= 3.9)
 
-To install these packages, you can use pip:
-
-```
-pip install scikit-learn
-```
 
 ## Usage
 
