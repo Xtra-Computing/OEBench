@@ -22,7 +22,7 @@ This project requires the following Python packages:
 - scipy
 - pyod
 - Keras
-- tensorflow
+- tensorflow-gpu
 - torch
 - rtdl
 - delu
