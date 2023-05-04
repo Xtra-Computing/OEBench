@@ -22,11 +22,11 @@ from ADBench.myutils import Utils
 import gc
 
 import tensorflow as tf
-from keras import backend as K
-from keras.models import Model
-from keras.layers import Input, Dense, Subtract,concatenate,Lambda,Reshape
-from keras.callbacks import ModelCheckpoint
-from keras.losses import mean_squared_error
+from tensorflow.keras import backend as K
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, Dense, Subtract,concatenate,Lambda,Reshape
+from tensorflow.keras.callbacks import ModelCheckpoint
+from tensorflow.keras.losses import mean_squared_error
 
 try:
     from keras.optimizers import Adam, RMSprop
