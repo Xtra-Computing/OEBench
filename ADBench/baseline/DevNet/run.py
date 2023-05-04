@@ -12,11 +12,11 @@ import gc
 
 import numpy as np
 import tensorflow as tf
-from keras import regularizers
-from keras import backend as K
-from keras.models import Model, load_model
-from keras.layers import Input, Dense
-from keras.callbacks import ModelCheckpoint, TensorBoard
+from tensorflow.keras import regularizers
+from tensorflow.keras import backend as K
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.layers import Input, Dense
+from tensorflow.keras.callbacks import ModelCheckpoint, TensorBoard
 
 try:
     from keras.optimizers import RMSprop # old tf version
