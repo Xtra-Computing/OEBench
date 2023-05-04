@@ -32,6 +32,8 @@ This project requires the following Python packages:
 - copulas
 - menelaus (need Python >= 3.9)
 
+If `import keras` reports error in ADBench, please replace it with `import tensorflow.keras`.
+
 
 ## Usage
 
