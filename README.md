@@ -30,13 +30,13 @@ This project requires the following Python packages:
 - xgboost
 - catboost
 - copulas
-- menelaus
+- menelaus (need Python >= 3.9)
 
 To install these packages, you can use pip:
 
-\```bash
+```
 pip install scikit-learn
-\```
+```
 
 ## Usage
 
@@ -47,9 +47,9 @@ pip install scikit-learn
 3. Run the script, and the pipeline will process each dataset in the specified list, generating various statistics and saving the results in separate CSV files within each dataset's subfolder. An `overall_stats.csv` file will also be generated, containing aggregated statistics for all datasets.
 
 
-\```bash
-python3 pipeline.py
-\```
+```
+python pipeline.py
+```
 
 ## Adding a New Dataset
 
@@ -69,7 +69,7 @@ For example, to add a dataset called `my_new_dataset`, you should:
 - If needed, manually add 'my_new_dataset' to the `dataset_prefix_list` variable in the script.
 
 Template of `schema.json` of a dataset is as follows:
-\```json
+```json
 {
     "numerical": ["num1", "num2"],
     "categorical": ["cat1", "cat2"],
@@ -79,16 +79,16 @@ Template of `schema.json` of a dataset is as follows:
     "window size": 0,
     "unnecessary": ["unnecessary1", "unnecessary2"]
 }
-\```
+```
 
 Template of `info.json` of a dataset is as follows:
-\```json
+```json
 {
     "schema": "schema.json",
     "data": "dataset/my_new_.csv",
     "task": "classification"
 }
-\```
+```
 
 ## Function: run_pipeline
 
