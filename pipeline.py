@@ -104,10 +104,10 @@ def data_preprocessing(dataset_path_prefix, data_path, schema_path, task):
     print(new_columns)
     new_column_count = new_columns.shape[0]
     
-    try:
-        data_onehot_nonnull_path = dataset_path_prefix+'/onehot_nonnull.csv'
-        data_onehot_nonnull = pd.read_csv(data_onehot_nonnull_path)
-    except:
+    #try:
+    #    data_onehot_nonnull_path = dataset_path_prefix+'/onehot_nonnull.csv'
+    #    data_onehot_nonnull = pd.read_csv(data_onehot_nonnull_path)
+    if True:#except:
         if(data.isnull().values.any() or data.isna().values.any()):
             print("has null")
             temp_columns = []
