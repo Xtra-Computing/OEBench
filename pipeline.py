@@ -29,10 +29,34 @@ from menelaus.ensemble.election import SimpleMajorityElection
 from menelaus.ensemble.ensemble import BatchEnsemble
 from statistics import mean
 from scipy import stats
+import logging
+import datetime
+import os
+
+def mkdirs(dirpath):
+    try:
+        os.makedirs(dirpath)
+    except Exception as _:
+        pass
+
+mkdirs("logs/")
+
+for handler in logging.root.handlers[:]:
+    logging.root.removeHandler(handler)
+
+log_file_name = 'logs/experiment_log-%s.log' % (datetime.datetime.now().strftime("%Y-%m-%d-%H:%M-%S"))
+
+logging.basicConfig(
+    filename=log_file_name,
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    datefmt='%m-%d %H:%M', level=logging.INFO, filemode='w')
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 def schema_parser(path):
     info_path = path+'/info.json'
-    print(info_path)
+    logger.info(info_path)
     with open(info_path, 'r') as f:
         info = json.load(f)
         schema_path = path+"/"+info["schema"]
@@ -63,14 +87,14 @@ def data_preprocessing(dataset_path_prefix, data_path, schema_path, task):
     original_column_count = data.shape[1]
     original_data = data
     
-    print("not replaced yet")
+    logger.info("not replaced yet")
     for value in replace_with_null:
-        print(value)
+        logger.info(value)
         data = data.replace(value, np.nan)
-        print("done")
-    print("replaced with null")
+        logger.info("done")
+    logger.info("replaced with null")
     
-    print("start sorting")
+    logger.info("start sorting")
     try:
         data = data.sort_values(timestamp, ascending=True)
     except:
@@ -78,7 +102,7 @@ def data_preprocessing(dataset_path_prefix, data_path, schema_path, task):
             data[timestamp] = pd.to_datetime(data[timestamp])
         except:
             pass
-    print("finished sorting")
+    logger.info("finished sorting")
     
     original_data = data
     
@@ -101,23 +125,24 @@ def data_preprocessing(dataset_path_prefix, data_path, schema_path, task):
     data_one_hot = pd.get_dummies(data_temp, columns=categorical)#no target
     
     new_columns = data_one_hot.columns
-    print(new_columns)
+    logger.info(new_columns)
     new_column_count = new_columns.shape[0]
     
     #try:
     #    data_onehot_nonnull_path = dataset_path_prefix+'/onehot_nonnull.csv'
     #    data_onehot_nonnull = pd.read_csv(data_onehot_nonnull_path)
-    if True:#except:
+    #except:
+    if True:
         if(data.isnull().values.any() or data.isna().values.any()):
-            print("has null")
+            logger.info("has null")
             temp_columns = []
             for col in new_columns:
                 temp_columns.append(col)
             for col in target:
                 temp_columns.append(col)
-            # print(temp_columns)
+            # logger.info(temp_columns)
             data_one_hot[target] = target_data#add target to one hot data
-            # print(data_one_hot.info())
+            # logger.info(data_one_hot.info())
             
             imp = KNNImputer(n_neighbors=2, weights="uniform")
             try:
@@ -133,21 +158,21 @@ def data_preprocessing(dataset_path_prefix, data_path, schema_path, task):
                 data_one_hot = data_one_hot.dropna(subset=target)
                 target_data = data_one_hot[target]
                 data_one_hot = data_one_hot.drop(target, axis=1)
-                print(data_one_hot.columns)
+                logger.info(data_one_hot.columns)
                 try:
-                    print("all numeric")
+                    logger.info("all numeric")
                     data_onehot_nonnull = imp.fit_transform(data_one_hot)
-                    print("done")
+                    logger.info("done")
                     # data_onehot_nonnull[target] = target_data
                     data_onehot_nonnull = data_onehot_nonnull.assign(target=target_data)
                     data_onehot_nonnull = pd.DataFrame(data_onehot_nonnull, columns=temp_columns)
                 except:
-                    print("non numeric")
+                    logger.info("non numeric")
                     for col in new_columns:
                         data_one_hot[col] = pd.to_numeric(data_one_hot[col], errors='coerce')
-                    print("start inputing")
+                    logger.info("start inputing")
                     data_onehot_nonnull = imp.fit_transform(data_one_hot)
-                    print("done")
+                    logger.info("done")
                     
                     # data_onehot_nonnull[target] = target_data
                     data_onehot_nonnull = data_onehot_nonnull.assign(target=target_data)
@@ -176,16 +201,16 @@ def data_preprocessing(dataset_path_prefix, data_path, schema_path, task):
     #     target_data = pd.DataFrame(target_data)
     #     target_data.head()
     
-    # print("test")
+    # logger.info("test")
     # if(data_one_hot.isnull().values.any()):
-    #     print("has null")
+    #     logger.info("has null")
     #     data_onehot_nonnull = imp.fit_transform(data_one_hot)
-    #     print("processed")
+    #     logger.info("processed")
     #     data_onehot_nonnull = pd.DataFrame(data_onehot_nonnull, columns=new_columns) 
     # else:
-    #     print("no null")
+    #     logger.info("no null")
     #     data_onehot_nonnull = data_one_hot
-        
+    logger.info(data_onehot_nonnull.isnull().values.any())
     return pd.DataFrame(target_data), pd.DataFrame(original_data), pd.DataFrame(data_onehot_nonnull), total_columns, window_size, row_count, original_column_count, new_columns, new_column_count
 
 
@@ -252,7 +277,7 @@ def missing_value_processor(data, window_size, total_columns, window_count, row_
 
     missing_value_stats_overall = pd.DataFrame(index=["columns_with_null", "col_null_dict", "empty_cells_num", "ave_null_columns"],
                                                columns=["overall"])
-    print("overall stats")
+    logger.info("overall stats")
     columns_with_null = []
     col_null_dict = {}
     empty_cells_num = 0
@@ -282,7 +307,7 @@ def missing_value_processor(data, window_size, total_columns, window_count, row_
     
     
 def data_drift_detector_multi_dimensional(data, window_size, window_num):
-    print(data)
+    logger.info(data)
     detectors_dict = {
         'kdq': KdqTreeBatch(bootstrap_samples=500),
         'hdddm': HDDDM(),
@@ -295,7 +320,7 @@ def data_drift_detector_multi_dimensional(data, window_size, window_num):
     reference = data.iloc[0:training_size]
 
     # ensemble.set_reference(reference)
-    print(f"Batch #{0} | Ensemble reference set")
+    logger.info(f"Batch #{0} | Ensemble reference set")
 
     drift_detector_list = ['hdddm','kdq']
 
@@ -307,7 +332,7 @@ def data_drift_detector_multi_dimensional(data, window_size, window_num):
     hdddm_warning_percentage = 0
     kdq_warning_percentage = 0
     for algo in drift_detector_list:
-        print(algo)
+        logger.info(algo)
         drift_count = 0
         drift_percentage = 0
         detected_drift = []
@@ -319,13 +344,13 @@ def data_drift_detector_multi_dimensional(data, window_size, window_num):
         detectors = {algo : detectors_dict[algo]}
         election = SimpleMajorityElection()
         ensemble = BatchEnsemble(detectors, election)
-        print("start reference")
-        print(reference)
+        logger.info("start reference")
+        logger.info(reference)
         ensemble.set_reference(reference)
-        print("start updating")
-        print(window_num)
+        logger.info("start updating")
+        logger.info(window_num)
         for n in range(1, window_num):
-            print(n)
+            logger.info(n)
             ensemble.update(data[n*window_size:(n+1)*window_size])
             detected_drift.append(ensemble.drift_state)
             if(ensemble.drift_state == 'drift'):
@@ -333,7 +358,7 @@ def data_drift_detector_multi_dimensional(data, window_size, window_num):
             elif(ensemble.drift_state == 'warning'):
                 warning_count+=1
         
-        print(detected_drift)
+        logger.info(detected_drift)
         
         drift_percentage = drift_count/(window_num-1)
         warning_percentage = warning_count/(window_num-1)
@@ -345,11 +370,11 @@ def data_drift_detector_multi_dimensional(data, window_size, window_num):
             kdq_drift_percentage = drift_percentage
             kdq_warning_percentage = warning_percentage
         
-        print(drift_percentage)
+        logger.info(drift_percentage)
     ave_drift_percentage = (hdddm_drift_percentage+kdq_drift_percentage)/2
     ave_warning_percentage = (hdddm_warning_percentage+kdq_warning_percentage)/2
     
-    print(drift_stats)
+    logger.info(drift_stats)
     return hdddm_drift_percentage, kdq_drift_percentage, ave_drift_percentage, hdddm_warning_percentage, kdq_warning_percentage, ave_warning_percentage
     # return drift_stats
 
@@ -365,7 +390,7 @@ def data_drift_detector_one_dimensional(data, window_size, window_num, columns):
     
     drift_detector_list = ['hdddm','kdq', 'cdbd']
     
-    print(data)
+    logger.info(data)
     hdddm_ave_drift_percentage = 0
     hdddm_max_drift_percentage = 0
     kdq_ave_drift_percentage = 0
@@ -419,12 +444,12 @@ def data_drift_detector_one_dimensional(data, window_size, window_num, columns):
     ks_ave_drift_percentage = mean(ks_drift_percentage_list)
     ks_max_drift_percentage = max(ks_drift_percentage_list)
     
-    print("ks warning")
-    print(ks_warning_percentage_list)
+    logger.info("ks warning")
+    logger.info(ks_warning_percentage_list)
     ks_ave_warning_percentage = mean(ks_warning_percentage_list)
     ks_max_warning_percentage = max(ks_warning_percentage_list)
-    print(ks_ave_warning_percentage)
-    print(ks_max_warning_percentage)
+    logger.info(ks_ave_warning_percentage)
+    logger.info(ks_max_warning_percentage)
     
     
     ave_warning_percentage = 0
@@ -434,9 +459,9 @@ def data_drift_detector_one_dimensional(data, window_size, window_num, columns):
         drift_percentage_list = []
         warning_percentage_list = []
         for col in columns:
-            print("column: "+col)
+            logger.info("column: "+col)
             reference = data[col].iloc[0:training_size]
-            print(reference)
+            logger.info(reference)
             current_detector.set_reference(reference) 
             
             detected_drift = []
@@ -446,9 +471,9 @@ def data_drift_detector_one_dimensional(data, window_size, window_num, columns):
             warning_count = 0
             warning_percentage = 0
             for n in range(1, window_num):
-                print(n)
+                logger.info(n)
                 curr = data[col].iloc[n*window_size:(n+1)*window_size]
-                print(curr)
+                logger.info(curr)
                 try:
                     current_detector.update(curr)
                     detected_drift.append(current_detector.drift_state)
@@ -468,13 +493,13 @@ def data_drift_detector_one_dimensional(data, window_size, window_num, columns):
         ave = mean(drift_percentage_list)
         maximum = max(drift_percentage_list)
         
-        print(algo)
-        print("warning")
-        print(warning_percentage_list)
+        logger.info(algo)
+        logger.info("warning")
+        logger.info(warning_percentage_list)
         warning_ave = mean(warning_percentage_list)
         warning_maximum = max(warning_percentage_list)
-        print(warning_ave)
-        print(warning_maximum)
+        logger.info(warning_ave)
+        logger.info(warning_maximum)
         
         if algo == "hdddm":
             hdddm_ave_drift_percentage = ave
@@ -507,8 +532,8 @@ def data_drift_detector_one_dimensional(data, window_size, window_num, columns):
     pca = PCA(n_components=2)
     pca_features = pca.fit_transform(data)
     pca_df = pd.DataFrame(data=pca_features, columns=['var1', 'var2'])
-    print("pca df:")
-    print(pca_df)
+    logger.info("pca df:")
+    logger.info(pca_df)
     
     drift_stats_pca = pd.DataFrame(columns=['var1', 'var2'])
     
@@ -527,8 +552,8 @@ def data_drift_detector_one_dimensional(data, window_size, window_num, columns):
         drift_count = 0
         drift_percentage = 0
         for n in range(0, window_num):
-            print(n)
-            # print(pca_df[n*window_size:(n+1)*window_size, col])
+            logger.info(n)
+            # logger.info(pca_df[n*window_size:(n+1)*window_size, col])
             pca_cd.update(pca_df[col].iloc[n*window_size:(n+1)*window_size])
             detected_drift.append(pca_cd.drift_state)
             if(pca_cd.drift_state == 'drift'):
@@ -585,8 +610,8 @@ def PERM(task, data, target, window_size, window_count, number_of_permutation, s
         k = k+window_size
     
     drift_percentage = drift_count/(window_count-1)
-    print("perm")
-    print(drift_percentage)
+    logger.info("perm")
+    logger.info(drift_percentage)
     
     return drift_percentage
 
@@ -617,31 +642,31 @@ def perm_detect(task, reference, current, reference_target, current_target, numb
             return False
         ordered_y_pred = rf.predict(current)
         ordered_y_pred = pd.DataFrame(ordered_y_pred)
-        # print("reference")
-        # print(reference)
+        # logger.info("reference")
+        # logger.info(reference)
         
-        # print("reference target")
-        # print(reference_target)
+        # logger.info("reference target")
+        # logger.info(reference_target)
         
-        # print("current")
-        # print(current)
+        # logger.info("current")
+        # logger.info(current)
         
-        # print("current target")
-        # print(current_target)
+        # logger.info("current target")
+        # logger.info(current_target)
         
-        # print("predicted")
-        # print(ordered_y_pred)
-        # print("regression")
+        # logger.info("predicted")
+        # logger.info(ordered_y_pred)
+        # logger.info("regression")
         ordered_loss = mean_absolute_error(np.array(current_target), np.array(ordered_y_pred))
-        print(ordered_loss)
+        logger.info(ordered_loss)
         y_range = np.max(np.array(current_target)) - np.min(np.array(current_target))
         ordered_loss = ordered_loss/y_range
     else:
-        print("reference")
-        print(reference)
+        logger.info("reference")
+        logger.info(reference)
         
-        print("reference target")
-        print(reference_target)
+        logger.info("reference target")
+        logger.info(reference_target)
         # rf = SGDClassifier(random_state = 42)
         try:
             rf.fit(reference, reference_target)
@@ -652,12 +677,12 @@ def perm_detect(task, reference, current, reference_target, current_target, numb
         ordered_y_pred = rf.predict(current)
         ordered_y_pred = pd.DataFrame(ordered_y_pred)
         # ordered_y_pred = ordered_y_pred.reshape()
-        print("classification")
+        logger.info("classification")
         # ordered_loss = log_loss(current_target, ordered_y_pred)
         ordered_loss = 1-accuracy_score(current_target, ordered_y_pred)
     
-    print("ordered loss")
-    print(ordered_loss)
+    logger.info("ordered loss")
+    logger.info(ordered_loss)
 
     count = 0
     for i in range(number_of_permutation):
@@ -667,12 +692,12 @@ def perm_detect(task, reference, current, reference_target, current_target, numb
             rf = LinearRegression()
             rf.fit(X_train, y_train)
             current_y_pred = rf.predict(X_test)
-            print("regression")
+            logger.info("regression")
             current_y_pred=pd.DataFrame(current_y_pred)
             current_loss = mean_absolute_error(np.array(y_test), np.array(current_y_pred))
             y_range = np.max(np.array(y_test)) - np.min(np.array(y_test))
             current_loss = current_loss/y_range
-            print(current_loss)
+            logger.info(current_loss)
         else:
             rf = SGDClassifier(random_state = 42)
             rf.fit(X_train, y_train)
@@ -683,16 +708,16 @@ def perm_detect(task, reference, current, reference_target, current_target, numb
             current_y_pred = rf.predict(X_test)
             current_y_pred=pd.DataFrame(current_y_pred)
             # current_y_pred=current_y_pred.reshape(-1,1)
-            print("classification")
+            logger.info("classification")
             # current_loss = log_loss(y_test, current_y_pred)
             current_loss = 1-accuracy_score(y_test, current_y_pred)
-            print(current_loss)
+            logger.info(current_loss)
         
         if(abs(ordered_loss-current_loss) <= sensitivity):
             count+=1
     
-    print("count")
-    print(count)
+    logger.info("count")
+    logger.info(count)
     
     value = (1+count)/(1+number_of_permutation)
             
@@ -744,20 +769,20 @@ def outlier_detector(data, window_size, window_count):
     ECOD_overall_anomaly_ratio = 0
     
     for name, clf in model_dict.items():
-        print(name)
+        logger.info(name)
         clf = clf(seed=seed, model_name=name)
         clf = clf.fit(data, [])
         # output predicted anomaly score on testing set
         score = clf.predict_score(data)
-        print(score)
+        logger.info(score)
         t = score.mean()+3*score.std()
-        print(t)
+        logger.info(t)
         anomaly_index = np.where(score>t)[0]
-        print(anomaly_index)
+        logger.info(anomaly_index)
         anomaly_count = len(anomaly_index)
         anomaly_sum = anomaly_sum + anomaly_count
         anomaly_count_list.append(anomaly_count)
-        print(anomaly_count)
+        logger.info(anomaly_count)
         outlier_stats_overall[name] = anomaly_count
         anomaly_ratio = anomaly_count/(len(data))
         
@@ -774,7 +799,7 @@ def outlier_detector(data, window_size, window_count):
                 if pos >= start and pos < end:
                     anomaly_count_current_window+=1
         
-            print(anomaly_count_current_window)
+            logger.info(anomaly_count_current_window)
             outlier_stats_each_window.loc[name][n] = anomaly_count_current_window   
             anomaly_ratio_current_window = anomaly_count_current_window/window_size
             if name=="IForest":
@@ -800,7 +825,7 @@ def outlier_detector(data, window_size, window_count):
     mean_ave_anomaly_ratio = mean(ave_anomaly_ratio_list)
     max_ave_anomaly_ratio = max(ave_anomaly_ratio_list)
     
-    # print(outlier_stats_overall)
+    # logger.info(outlier_stats_overall)
     
     return IForest_ave_anomaly_ratio, IForest_max_anomaly_ratio, ECOD_ave_anomaly_ratio, ECOD_max_anomaly_ratio, mean_ave_anomaly_ratio, max_ave_anomaly_ratio, ECOD_overall_anomaly_ratio, IForest_overall_anomaly_ratio, ave_overall_anomaly_ratio
     # return outlier_stats_each_window, outlier_stats_overall
@@ -810,7 +835,6 @@ from sklearn.naive_bayes import GaussianNB
 def concept_drift(task, data, target, window_size, window_count):
     training_size = window_size
     
-    
     # X_test = data.iloc[training_size:len(data)]
     # y_true = target.iloc[training_size:len(data)]
     start=0
@@ -819,6 +843,7 @@ def concept_drift(task, data, target, window_size, window_count):
     if task == "regression":
         clf = LinearRegression()
         X_train = data.iloc[start:end]
+        
         y_train = target.iloc[start:end]
         clf.fit(X_train, y_train)
     else:
@@ -849,14 +874,14 @@ def concept_drift(task, data, target, window_size, window_count):
     for i in range(end, len(data)):
         X_test = data.iloc[i]
         X_test = np.array(X_test).reshape(1, -1)
-        print(X_test)
+        #logger.info(X_test)
         y_pred = clf.predict(X_test)
         # if(task=="classification"):
         #     y_true = target.iloc[i]
         # else:
         #     y_true = int(target.iloc[i])
         y_true = target.iloc[i]
-        print(y_pred)
+        #logger.info(y_pred)
         
         adwin.update(y_true, y_pred)
         ddm.update(y_true, y_pred)
@@ -945,15 +970,15 @@ def concept_drift(task, data, target, window_size, window_count):
     eddm_warning_percentage = eddm_warning_count/n
     warning_ave = (adwin_warning_percentage + ddm_warning_percentage + eddm_warning_percentage)/3
     
-    print(adwin_drift_percentage)
-    print(ddm_drift_percentage)
-    print(eddm_drift_percentage)
-    print(ave)
+    logger.info(adwin_drift_percentage)
+    logger.info(ddm_drift_percentage)
+    logger.info(eddm_drift_percentage)
+    logger.info(ave)
     
-    print(adwin_warning_percentage)
-    print(ddm_warning_percentage)
-    print(eddm_warning_percentage)
-    print(warning_ave)
+    logger.info(adwin_warning_percentage)
+    logger.info(ddm_warning_percentage)
+    logger.info(eddm_warning_percentage)
+    logger.info(warning_ave)
     
     return adwin_drift_percentage, ddm_drift_percentage, eddm_drift_percentage, ave, adwin_warning_percentage, ddm_warning_percentage, eddm_warning_percentage, warning_ave
 
@@ -992,7 +1017,7 @@ def run_pipeline(dataset_prefix_list, done):
         if dataset_path_prefix in done:
             continue
         
-        print(dataset_path_prefix)
+        logger.info(dataset_path_prefix)
         try:
             data_path, schema_path, task = schema_parser(dataset_path_prefix)
         except:
@@ -1025,10 +1050,10 @@ def run_pipeline(dataset_prefix_list, done):
                                                                     "ave_warning_percentage", "max_warning_percentage",
                                                                     "concept_drift_ratio"])
         
-        print("start pre-processing")
+        logger.info("start pre-processing")
         
         target_data_nonnull, data_before_onehot, data_onehot_nonnull, original_columns, window_size, row_count, original_column_count, new_columns, new_column_count = data_preprocessing(dataset_path_prefix, data_path, schema_path, task)
-        print("preprocessing done")
+        logger.info("preprocessing done")
         current_stats.loc[dataset_path_prefix]["size"] = row_count
         current_stats.loc[dataset_path_prefix]["#columns"] = original_column_count
         
@@ -1036,7 +1061,7 @@ def run_pipeline(dataset_prefix_list, done):
         overall_stats.loc[dataset_path_prefix]["#columns"] = original_column_count
         
         window_count = int(int(row_count)/int(window_size))
-        print(window_count)
+        logger.info(window_count)
         
         # ave_rows_with_missing_values_ratio_per_window, max_rows_with_missing_values_ratio_per_window, total_rows_with_missing_values_ratio, ave_ave_null_columns_ratio, max_ave_null_columns_ratio, ave_missing_value_ratio, max_missing_value_ratio, overall_ave_null_columns_ratio, overall_missing_value_ratio = missing_value_processor(data_before_onehot, window_size, original_columns, window_count, row_count)
         
@@ -1084,7 +1109,7 @@ def run_pipeline(dataset_prefix_list, done):
         # overall_stats.loc[dataset_path_prefix]["ave_overall_anomaly_ratio"] = ave_overall_anomaly_ratio
         
         
-        # print("start multi-dimensional drift detection")
+        # logger.info("start multi-dimensional drift detection")
         # hdddm_drift_percentage, kdq_drift_percentage, ave_drift_percentage, hdddm_warning_percentage, kdq_warning_percentage, ave_warning_percentage = data_drift_detector_multi_dimensional(data_onehot_nonnull, window_size, window_count)
         
         # current_stats.loc[dataset_path_prefix]["hdddm_drift_percentage"] = hdddm_drift_percentage
@@ -1101,11 +1126,11 @@ def run_pipeline(dataset_prefix_list, done):
         # overall_stats.loc[dataset_path_prefix]["kdq_warning_percentage"] = kdq_warning_percentage
         # overall_stats.loc[dataset_path_prefix]["ave_warning_percentage"] = ave_warning_percentage
         
-        # print("start one-dimensional drift detection")
+        # logger.info("start one-dimensional drift detection")
         # ks_ave_drift_percentage, ks_max_drift_percentage, hdddm_ave_drift_percentage, hdddm_max_drift_percentage, kdq_ave_drift_percentage, kdq_max_drift_percentage, cbdb_ave_drift_percentage, cbdb_max_drift_percentage, pca_ave_drift_percentage, pca_max_drift_percentage, ave_drift_percentage, max_drift_percentage, hdddm_ave_warning_percentage, hdddm_max_warning_percentage, kdq_ave_warning_percentage, kdq_max_warning_percentage, cbdb_ave_warning_percentage, cbdb_max_warning_percentage, pca_ave_warning_percentage, pca_max_warning_percentage, ks_ave_warning_percentage, ks_max_warning_percentage, ave_warning_percentage, max_warning_percentage = data_drift_detector_one_dimensional(data_onehot_nonnull, window_size, window_count, new_columns)
-        # print("ks stats")
-        # print(ks_ave_drift_percentage)
-        # print(ks_max_drift_percentage)
+        # logger.info("ks stats")
+        # logger.info(ks_ave_drift_percentage)
+        # logger.info(ks_max_drift_percentage)
         # current_stats.loc[dataset_path_prefix]["ks_ave_drift_percentage"] = ks_ave_drift_percentage
         # current_stats.loc[dataset_path_prefix]["ks_max_drift_percentage"] = ks_max_drift_percentage
         # current_stats.loc[dataset_path_prefix]["hdddm_ave_drift_percentage"] = hdddm_ave_drift_percentage
@@ -1170,7 +1195,7 @@ def run_pipeline(dataset_prefix_list, done):
         #     current_concept_drift_stats.to_csv(dataset_path_prefix + '/concept_drift_stats.csv', mode='w')
             
         #     done.append(dataset_path_prefix)
-        #     print(done)
+        #     logger.info(done)
         # except:
         #     continue
         # concept_drift_ratio = PERM(task, data_onehot_nonnull, target_data_nonnull, window_size, window_count, 20, 0.02, 0.05)
@@ -1184,7 +1209,7 @@ def run_pipeline(dataset_prefix_list, done):
         # current_concept_drift_stats.to_csv(dataset_path_prefix + '/concept_drift_stats.csv', mode='w')
             
         # done.append(dataset_path_prefix)
-        # print(done)
+        # logger.info(done)
         
         adwin, ddm, eddm, ave, adwin_warning, ddm_warning, eddm_warning, warning_ave = concept_drift(task, data_onehot_nonnull, target_data_nonnull, window_size, window_count)
         
@@ -1204,7 +1229,7 @@ def run_pipeline(dataset_prefix_list, done):
         current_concept_drift_stats.to_csv(dataset_path_prefix + '/menelaus_concept_drift_stats.csv', mode='w')
         
         done.append(dataset_path_prefix)
-        print(done)
+        logger.info(done)
         
         
     overall_stats.to_csv('overall_stats.csv', mode='w')
@@ -1218,7 +1243,7 @@ rootdir = "dataset_experiment_info"
 dataset_prefix_list = [x[0] for x in os.walk(rootdir)]
 
 # dataset_prefix_list = ['dataset_experiment_info/weather_indian_cities/lucknow']
-print(dataset_prefix_list)
+logger.info(dataset_prefix_list)
 # done = ['dataset_experiment_info/airlines', 'dataset_experiment_info/airbnb', 'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/bike_sharing_demand', 'dataset_experiment_info/rssi', 'dataset_experiment_info/KDDCUP99', 'dataset_experiment_info/electricity_prices', 
 #         'dataset_experiment_info/tetouan', 'dataset_experiment_info/beijing_multisite/wanliu', 'dataset_experiment_info/beijing_multisite/wanshouxingong', 'dataset_experiment_info/beijing_multisite/gucheng', 'dataset_experiment_info/beijing_multisite/huairou', 
 #         'dataset_experiment_info/beijing_multisite/nongzhanguan', 'dataset_experiment_info/beijing_multisite/changping', 'dataset_experiment_info/beijing_multisite/dingling', 'dataset_experiment_info/beijing_multisite/aotizhongxin',
@@ -1236,7 +1261,7 @@ print(dataset_prefix_list)
 
 # done=['dataset_experiment_info/house_rent', 'dataset_experiment_info/airbnb', 'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/bike_sharing_demand', 'dataset_experiment_info/rssi', 'dataset_experiment_info/noaa', 'dataset_experiment_info/KDDCUP99', 'dataset_experiment_info/electricity_prices', 'dataset_experiment_info/tetouan', 'dataset_experiment_info/beijing_multisite/wanliu', 'dataset_experiment_info/beijing_multisite/wanshouxingong', 'dataset_experiment_info/beijing_multisite/gucheng', 'dataset_experiment_info/beijing_multisite/huairou', 'dataset_experiment_info/beijing_multisite/nongzhanguan', 'dataset_experiment_info/beijing_multisite/changping', 'dataset_experiment_info/beijing_multisite/dingling', 'dataset_experiment_info/beijing_multisite/aotizhongxin', 'dataset_experiment_info/beijing_multisite/dongsi', 'dataset_experiment_info/beijing_multisite/shunyi', 'dataset_experiment_info/beijing_multisite/guanyuan', 'dataset_experiment_info/beijing_multisite/tiantan', 'dataset_experiment_info/weather_indian_cities/bangalore', 'dataset_experiment_info/weather_indian_cities/lucknow', 'dataset_experiment_info/weather_indian_cities/mumbai', 'dataset_experiment_info/weather_indian_cities/Rajasthan', 'dataset_experiment_info/weather_indian_cities/Bhubhneshwar', 'dataset_experiment_info/weather_indian_cities/delhi', 'dataset_experiment_info/weather_indian_cities/chennai', 'dataset_experiment_info/insects/abrupt_imbalanced', 'dataset_experiment_info/insects/out-of-control', 'dataset_experiment_info/insects/incremental_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_balanced', 'dataset_experiment_info/insects/incremental_balanced', 'dataset_experiment_info/insects/incremental_abrupt_balanced', 'dataset_experiment_info/insects/gradual_imbalanced', 'dataset_experiment_info/insects/abrupt_balanced', 'dataset_experiment_info/insects/incremental_abrupt_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_imbalanced', 'dataset_experiment_info/insects/gradual_balanced', 'dataset_experiment_info/italian_city_airquality', 'dataset_experiment_info/taxi_ride_duration', 'dataset_experiment_info/room_occupancy', 'dataset_experiment_info/rialto', 'dataset_experiment_info/traffic_volumn', 'dataset_experiment_info/news_popularity', 'dataset_experiment_info/beijingPM2.5', 'dataset_experiment_info/energy_prediction', 'dataset_experiment_info/household', 'dataset_experiment_info/election', 'dataset_experiment_info/covtype']
 done = []
-dataset_prefix_list = ['dataset_experiment_info/household']
+#dataset_prefix_list = ['dataset_experiment_info/household']
 
 
 run_pipeline(dataset_prefix_list, done)
