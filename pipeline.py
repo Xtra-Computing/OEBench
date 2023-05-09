@@ -309,7 +309,7 @@ def missing_value_processor(data, window_size, total_columns, window_count, row_
     
     
 def data_drift_detector_multi_dimensional(data, window_size, window_num):
-    logger.info(data)
+    #logger.info(data)
     detectors_dict = {
         'kdq': KdqTreeBatch(bootstrap_samples=500),
         'hdddm': HDDDM(),
@@ -322,7 +322,7 @@ def data_drift_detector_multi_dimensional(data, window_size, window_num):
     reference = data.iloc[0:training_size]
 
     # ensemble.set_reference(reference)
-    logger.info(f"Batch #{0} | Ensemble reference set")
+    #logger.info(f"Batch #{0} | Ensemble reference set")
 
     drift_detector_list = ['hdddm','kdq']
 
@@ -334,7 +334,7 @@ def data_drift_detector_multi_dimensional(data, window_size, window_num):
     hdddm_warning_percentage = 0
     kdq_warning_percentage = 0
     for algo in drift_detector_list:
-        logger.info(algo)
+        #logger.info(algo)
         drift_count = 0
         drift_percentage = 0
         detected_drift = []
@@ -346,13 +346,13 @@ def data_drift_detector_multi_dimensional(data, window_size, window_num):
         detectors = {algo : detectors_dict[algo]}
         election = SimpleMajorityElection()
         ensemble = BatchEnsemble(detectors, election)
-        logger.info("start reference")
-        logger.info(reference)
+        #logger.info("start reference")
+        #logger.info(reference)
         ensemble.set_reference(reference)
-        logger.info("start updating")
-        logger.info(window_num)
+        #logger.info("start updating")
+        #logger.info(window_num)
         for n in range(1, window_num):
-            logger.info(n)
+            #logger.info(n)
             ensemble.update(data[n*window_size:(n+1)*window_size])
             detected_drift.append(ensemble.drift_state)
             if(ensemble.drift_state == 'drift'):
@@ -360,7 +360,7 @@ def data_drift_detector_multi_dimensional(data, window_size, window_num):
             elif(ensemble.drift_state == 'warning'):
                 warning_count+=1
         
-        logger.info(detected_drift)
+        #logger.info(detected_drift)
         
         drift_percentage = drift_count/(window_num-1)
         warning_percentage = warning_count/(window_num-1)
@@ -372,7 +372,7 @@ def data_drift_detector_multi_dimensional(data, window_size, window_num):
             kdq_drift_percentage = drift_percentage
             kdq_warning_percentage = warning_percentage
         
-        logger.info(drift_percentage)
+        #logger.info(drift_percentage)
     ave_drift_percentage = (hdddm_drift_percentage+kdq_drift_percentage)/2
     ave_warning_percentage = (hdddm_warning_percentage+kdq_warning_percentage)/2
     
@@ -392,7 +392,7 @@ def data_drift_detector_one_dimensional(data, window_size, window_num, columns):
     
     drift_detector_list = ['hdddm','kdq', 'cdbd']
     
-    logger.info(data)
+    #logger.info(data)
     hdddm_ave_drift_percentage = 0
     hdddm_max_drift_percentage = 0
     kdq_ave_drift_percentage = 0
@@ -461,9 +461,9 @@ def data_drift_detector_one_dimensional(data, window_size, window_num, columns):
         drift_percentage_list = []
         warning_percentage_list = []
         for col in columns:
-            logger.info("column: "+col)
+            #logger.info("column: "+col)
             reference = data[col].iloc[0:training_size]
-            logger.info(reference)
+            #logger.info(reference)
             current_detector.set_reference(reference) 
             
             detected_drift = []
@@ -473,9 +473,9 @@ def data_drift_detector_one_dimensional(data, window_size, window_num, columns):
             warning_count = 0
             warning_percentage = 0
             for n in range(1, window_num):
-                logger.info(n)
+                #logger.info(n)
                 curr = data[col].iloc[n*window_size:(n+1)*window_size]
-                logger.info(curr)
+                #logger.info(curr)
                 try:
                     current_detector.update(curr)
                     detected_drift.append(current_detector.drift_state)
@@ -495,13 +495,13 @@ def data_drift_detector_one_dimensional(data, window_size, window_num, columns):
         ave = mean(drift_percentage_list)
         maximum = max(drift_percentage_list)
         
-        logger.info(algo)
-        logger.info("warning")
-        logger.info(warning_percentage_list)
+        #logger.info(algo)
+        #logger.info("warning")
+        #logger.info(warning_percentage_list)
         warning_ave = mean(warning_percentage_list)
         warning_maximum = max(warning_percentage_list)
-        logger.info(warning_ave)
-        logger.info(warning_maximum)
+        #logger.info(warning_ave)
+        #logger.info(warning_maximum)
         
         if algo == "hdddm":
             hdddm_ave_drift_percentage = ave
@@ -554,7 +554,7 @@ def data_drift_detector_one_dimensional(data, window_size, window_num, columns):
         drift_count = 0
         drift_percentage = 0
         for n in range(0, window_num):
-            logger.info(n)
+            #logger.info(n)
             # logger.info(pca_df[n*window_size:(n+1)*window_size, col])
             pca_cd.update(pca_df[col].iloc[n*window_size:(n+1)*window_size])
             detected_drift.append(pca_cd.drift_state)
@@ -660,15 +660,15 @@ def perm_detect(task, reference, current, reference_target, current_target, numb
         # logger.info(ordered_y_pred)
         # logger.info("regression")
         ordered_loss = mean_absolute_error(np.array(current_target), np.array(ordered_y_pred))
-        logger.info(ordered_loss)
+        #logger.info(ordered_loss)
         y_range = np.max(np.array(current_target)) - np.min(np.array(current_target))
         ordered_loss = ordered_loss/y_range
     else:
-        logger.info("reference")
-        logger.info(reference)
+        #logger.info("reference")
+        #logger.info(reference)
         
-        logger.info("reference target")
-        logger.info(reference_target)
+        #logger.info("reference target")
+        #logger.info(reference_target)
         # rf = SGDClassifier(random_state = 42)
         try:
             rf.fit(reference, reference_target)
@@ -679,12 +679,12 @@ def perm_detect(task, reference, current, reference_target, current_target, numb
         ordered_y_pred = rf.predict(current)
         ordered_y_pred = pd.DataFrame(ordered_y_pred)
         # ordered_y_pred = ordered_y_pred.reshape()
-        logger.info("classification")
+        #logger.info("classification")
         # ordered_loss = log_loss(current_target, ordered_y_pred)
         ordered_loss = 1-accuracy_score(current_target, ordered_y_pred)
     
-    logger.info("ordered loss")
-    logger.info(ordered_loss)
+    #logger.info("ordered loss")
+    #logger.info(ordered_loss)
 
     count = 0
     for i in range(number_of_permutation):
@@ -694,12 +694,12 @@ def perm_detect(task, reference, current, reference_target, current_target, numb
             rf = LinearRegression()
             rf.fit(X_train, y_train)
             current_y_pred = rf.predict(X_test)
-            logger.info("regression")
+            #logger.info("regression")
             current_y_pred=pd.DataFrame(current_y_pred)
             current_loss = mean_absolute_error(np.array(y_test), np.array(current_y_pred))
             y_range = np.max(np.array(y_test)) - np.min(np.array(y_test))
             current_loss = current_loss/y_range
-            logger.info(current_loss)
+            #logger.info(current_loss)
         else:
             rf = SGDClassifier(random_state = 42)
             rf.fit(X_train, y_train)
@@ -710,16 +710,16 @@ def perm_detect(task, reference, current, reference_target, current_target, numb
             current_y_pred = rf.predict(X_test)
             current_y_pred=pd.DataFrame(current_y_pred)
             # current_y_pred=current_y_pred.reshape(-1,1)
-            logger.info("classification")
+            #logger.info("classification")
             # current_loss = log_loss(y_test, current_y_pred)
             current_loss = 1-accuracy_score(y_test, current_y_pred)
-            logger.info(current_loss)
+            #logger.info(current_loss)
         
         if(abs(ordered_loss-current_loss) <= sensitivity):
             count+=1
     
-    logger.info("count")
-    logger.info(count)
+    #logger.info("count")
+    #logger.info(count)
     
     value = (1+count)/(1+number_of_permutation)
             
@@ -771,20 +771,20 @@ def outlier_detector(data, window_size, window_count):
     ECOD_overall_anomaly_ratio = 0
     
     for name, clf in model_dict.items():
-        logger.info(name)
+        #logger.info(name)
         clf = clf(seed=seed, model_name=name)
         clf = clf.fit(data, [])
         # output predicted anomaly score on testing set
         score = clf.predict_score(data)
-        logger.info(score)
+        #logger.info(score)
         t = score.mean()+3*score.std()
-        logger.info(t)
+        #logger.info(t)
         anomaly_index = np.where(score>t)[0]
-        logger.info(anomaly_index)
+        #logger.info(anomaly_index)
         anomaly_count = len(anomaly_index)
         anomaly_sum = anomaly_sum + anomaly_count
         anomaly_count_list.append(anomaly_count)
-        logger.info(anomaly_count)
+        #logger.info(anomaly_count)
         outlier_stats_overall[name] = anomaly_count
         anomaly_ratio = anomaly_count/(len(data))
         
@@ -801,7 +801,7 @@ def outlier_detector(data, window_size, window_count):
                 if pos >= start and pos < end:
                     anomaly_count_current_window+=1
         
-            logger.info(anomaly_count_current_window)
+            #logger.info(anomaly_count_current_window)
             outlier_stats_each_window.loc[name][n] = anomaly_count_current_window   
             anomaly_ratio_current_window = anomaly_count_current_window/window_size
             if name=="IForest":
@@ -1012,7 +1012,7 @@ def run_pipeline(dataset_prefix_list, done):
                                                                  "cbdb_ave_warning_percentage", "cbdb_max_warning_percentage", 
                                                                  "pca_ave_warning_percentage", "pca_max_warning_percentage", 
                                                                  "ave_warning_percentage", "max_warning_percentage",
-                                                                 "concept_drift_ratio"])
+                                                                 "concept_drift_ratio", "adwin", "ddm", "eddm", "ave", "adwin_warning", "ddm_warning", "eddm_warning", "ave_warning"])
     
     
     for dataset_path_prefix in dataset_prefix_list:
@@ -1050,7 +1050,7 @@ def run_pipeline(dataset_prefix_list, done):
                                                                     "cbdb_ave_warning_percentage", "cbdb_max_warning_percentage", 
                                                                     "pca_ave_warning_percentage", "pca_max_warning_percentage", 
                                                                     "ave_warning_percentage", "max_warning_percentage",
-                                                                    "concept_drift_ratio"])
+                                                                    "concept_drift_ratio", "adwin", "ddm", "eddm", "ave", "adwin_warning", "ddm_warning", "eddm_warning", "ave_warning"])
         
         logger.info("start pre-processing")
         
@@ -1065,153 +1065,155 @@ def run_pipeline(dataset_prefix_list, done):
         window_count = int(int(row_count)/int(window_size))
         logger.info(window_count)
         
-        # ave_rows_with_missing_values_ratio_per_window, max_rows_with_missing_values_ratio_per_window, total_rows_with_missing_values_ratio, ave_ave_null_columns_ratio, max_ave_null_columns_ratio, ave_missing_value_ratio, max_missing_value_ratio, overall_ave_null_columns_ratio, overall_missing_value_ratio = missing_value_processor(data_before_onehot, window_size, original_columns, window_count, row_count)
+        ave_rows_with_missing_values_ratio_per_window, max_rows_with_missing_values_ratio_per_window, total_rows_with_missing_values_ratio, ave_ave_null_columns_ratio, max_ave_null_columns_ratio, ave_missing_value_ratio, max_missing_value_ratio, overall_ave_null_columns_ratio, overall_missing_value_ratio = missing_value_processor(data_before_onehot, window_size, original_columns, window_count, row_count)
         
-        # current_stats.loc[dataset_path_prefix]["ave_rows_with_missing_values_ratio_per_window"] = ave_rows_with_missing_values_ratio_per_window
-        # current_stats.loc[dataset_path_prefix]["max_rows_with_missing_values_ratio_per_window"] = max_rows_with_missing_values_ratio_per_window
-        # current_stats.loc[dataset_path_prefix]["total_rows_with_missing_values_ratio"] = total_rows_with_missing_values_ratio
-        # current_stats.loc[dataset_path_prefix]["overall missing value ratio"] = overall_missing_value_ratio
-        # current_stats.loc[dataset_path_prefix]["overall average null columns ratio"] = overall_ave_null_columns_ratio
-        # current_stats.loc[dataset_path_prefix]["average null columns ratio among all windows"] = ave_ave_null_columns_ratio
-        # current_stats.loc[dataset_path_prefix]["max average #null columns ratio among all windows"] = max_ave_null_columns_ratio
-        # current_stats.loc[dataset_path_prefix]["average missing value ratio among all windows"] = ave_missing_value_ratio
-        # current_stats.loc[dataset_path_prefix]["max missing value ration among all windows"] = max_missing_value_ratio
-        # current_stats.loc[dataset_path_prefix]["max missing value ration among all windows"] = max_missing_value_ratio
+        current_stats.loc[dataset_path_prefix]["ave_rows_with_missing_values_ratio_per_window"] = ave_rows_with_missing_values_ratio_per_window
+        current_stats.loc[dataset_path_prefix]["max_rows_with_missing_values_ratio_per_window"] = max_rows_with_missing_values_ratio_per_window
+        current_stats.loc[dataset_path_prefix]["total_rows_with_missing_values_ratio"] = total_rows_with_missing_values_ratio
+        current_stats.loc[dataset_path_prefix]["overall missing value ratio"] = overall_missing_value_ratio
+        current_stats.loc[dataset_path_prefix]["overall average null columns ratio"] = overall_ave_null_columns_ratio
+        current_stats.loc[dataset_path_prefix]["average null columns ratio among all windows"] = ave_ave_null_columns_ratio
+        current_stats.loc[dataset_path_prefix]["max average #null columns ratio among all windows"] = max_ave_null_columns_ratio
+        current_stats.loc[dataset_path_prefix]["average missing value ratio among all windows"] = ave_missing_value_ratio
+        current_stats.loc[dataset_path_prefix]["max missing value ration among all windows"] = max_missing_value_ratio
+        current_stats.loc[dataset_path_prefix]["max missing value ration among all windows"] = max_missing_value_ratio
         
-        # overall_stats.loc[dataset_path_prefix]["ave_rows_with_missing_values_ratio_per_window"] = ave_rows_with_missing_values_ratio_per_window
-        # overall_stats.loc[dataset_path_prefix]["max_rows_with_missing_values_ratio_per_window"] = max_rows_with_missing_values_ratio_per_window
-        # overall_stats.loc[dataset_path_prefix]["total_rows_with_missing_values_ratio"] = total_rows_with_missing_values_ratio
-        # overall_stats.loc[dataset_path_prefix]["overall missing value ratio"] = overall_missing_value_ratio
-        # overall_stats.loc[dataset_path_prefix]["overall average null columns ratio"] = overall_ave_null_columns_ratio
-        # overall_stats.loc[dataset_path_prefix]["average null columns ratio among all windows"] = ave_ave_null_columns_ratio
-        # overall_stats.loc[dataset_path_prefix]["max average #null columns ratio among all windows"] = max_ave_null_columns_ratio
-        # overall_stats.loc[dataset_path_prefix]["average missing value ratio among all windows"] = ave_missing_value_ratio
-        # overall_stats.loc[dataset_path_prefix]["max missing value ration among all windows"] = max_missing_value_ratio
+        overall_stats.loc[dataset_path_prefix]["ave_rows_with_missing_values_ratio_per_window"] = ave_rows_with_missing_values_ratio_per_window
+        overall_stats.loc[dataset_path_prefix]["max_rows_with_missing_values_ratio_per_window"] = max_rows_with_missing_values_ratio_per_window
+        overall_stats.loc[dataset_path_prefix]["total_rows_with_missing_values_ratio"] = total_rows_with_missing_values_ratio
+        overall_stats.loc[dataset_path_prefix]["overall missing value ratio"] = overall_missing_value_ratio
+        overall_stats.loc[dataset_path_prefix]["overall average null columns ratio"] = overall_ave_null_columns_ratio
+        overall_stats.loc[dataset_path_prefix]["average null columns ratio among all windows"] = ave_ave_null_columns_ratio
+        overall_stats.loc[dataset_path_prefix]["max average #null columns ratio among all windows"] = max_ave_null_columns_ratio
+        overall_stats.loc[dataset_path_prefix]["average missing value ratio among all windows"] = ave_missing_value_ratio
+        overall_stats.loc[dataset_path_prefix]["max missing value ration among all windows"] = max_missing_value_ratio
         
-        # IForest_ave_anomaly_ratio, IForest_max_anomaly_ratio, ECOD_ave_anomaly_ratio, ECOD_max_anomaly_ratio, mean_ave_anomaly_ratio, max_ave_anomaly_ratio, ECOD_overall_anomaly_ratio, IForest_overall_anomaly_ratio, ave_overall_anomaly_ratio = outlier_detector(data_onehot_nonnull, window_size, window_count)
+        IForest_ave_anomaly_ratio, IForest_max_anomaly_ratio, ECOD_ave_anomaly_ratio, ECOD_max_anomaly_ratio, mean_ave_anomaly_ratio, max_ave_anomaly_ratio, ECOD_overall_anomaly_ratio, IForest_overall_anomaly_ratio, ave_overall_anomaly_ratio = outlier_detector(data_onehot_nonnull, window_size, window_count)
         
-        # current_stats.loc[dataset_path_prefix]["IForest_ave_anomaly_ratio"] = IForest_ave_anomaly_ratio
-        # current_stats.loc[dataset_path_prefix]["IForest_max_anomaly_ratio"] = IForest_max_anomaly_ratio
-        # current_stats.loc[dataset_path_prefix]["ECOD_ave_anomaly_ratio"] = ECOD_ave_anomaly_ratio
-        # current_stats.loc[dataset_path_prefix]["ECOD_max_anomaly_ratio"] = ECOD_max_anomaly_ratio
-        # current_stats.loc[dataset_path_prefix]["mean_ave_anomaly_ratio"] = mean_ave_anomaly_ratio
-        # current_stats.loc[dataset_path_prefix]["max_ave_anomaly_ratio"] = max_ave_anomaly_ratio
-        # current_stats.loc[dataset_path_prefix]["ECOD_overall_anomaly_ratio"] = ECOD_overall_anomaly_ratio
-        # current_stats.loc[dataset_path_prefix]["IForest_overall_anomaly_ratio"] = IForest_overall_anomaly_ratio
-        # current_stats.loc[dataset_path_prefix]["ave_overall_anomaly_ratio"] = ave_overall_anomaly_ratio
+        current_stats.loc[dataset_path_prefix]["IForest_ave_anomaly_ratio"] = IForest_ave_anomaly_ratio
+        current_stats.loc[dataset_path_prefix]["IForest_max_anomaly_ratio"] = IForest_max_anomaly_ratio
+        current_stats.loc[dataset_path_prefix]["ECOD_ave_anomaly_ratio"] = ECOD_ave_anomaly_ratio
+        current_stats.loc[dataset_path_prefix]["ECOD_max_anomaly_ratio"] = ECOD_max_anomaly_ratio
+        current_stats.loc[dataset_path_prefix]["mean_ave_anomaly_ratio"] = mean_ave_anomaly_ratio
+        current_stats.loc[dataset_path_prefix]["max_ave_anomaly_ratio"] = max_ave_anomaly_ratio
+        current_stats.loc[dataset_path_prefix]["ECOD_overall_anomaly_ratio"] = ECOD_overall_anomaly_ratio
+        current_stats.loc[dataset_path_prefix]["IForest_overall_anomaly_ratio"] = IForest_overall_anomaly_ratio
+        current_stats.loc[dataset_path_prefix]["ave_overall_anomaly_ratio"] = ave_overall_anomaly_ratio
         
-        # overall_stats.loc[dataset_path_prefix]["IForest_ave_anomaly_ratio"] = IForest_ave_anomaly_ratio
-        # overall_stats.loc[dataset_path_prefix]["IForest_max_anomaly_ratio"] = IForest_max_anomaly_ratio
-        # overall_stats.loc[dataset_path_prefix]["ECOD_ave_anomaly_ratio"] = ECOD_ave_anomaly_ratio
-        # overall_stats.loc[dataset_path_prefix]["ECOD_max_anomaly_ratio"] = ECOD_max_anomaly_ratio
-        # overall_stats.loc[dataset_path_prefix]["mean_ave_anomaly_ratio"] = mean_ave_anomaly_ratio
-        # overall_stats.loc[dataset_path_prefix]["max_ave_anomaly_ratio"] = max_ave_anomaly_ratio
-        # overall_stats.loc[dataset_path_prefix]["ECOD_overall_anomaly_ratio"] = ECOD_overall_anomaly_ratio
-        # overall_stats.loc[dataset_path_prefix]["IForest_overall_anomaly_ratio"] = IForest_overall_anomaly_ratio
-        # overall_stats.loc[dataset_path_prefix]["ave_overall_anomaly_ratio"] = ave_overall_anomaly_ratio
+        overall_stats.loc[dataset_path_prefix]["IForest_ave_anomaly_ratio"] = IForest_ave_anomaly_ratio
+        overall_stats.loc[dataset_path_prefix]["IForest_max_anomaly_ratio"] = IForest_max_anomaly_ratio
+        overall_stats.loc[dataset_path_prefix]["ECOD_ave_anomaly_ratio"] = ECOD_ave_anomaly_ratio
+        overall_stats.loc[dataset_path_prefix]["ECOD_max_anomaly_ratio"] = ECOD_max_anomaly_ratio
+        overall_stats.loc[dataset_path_prefix]["mean_ave_anomaly_ratio"] = mean_ave_anomaly_ratio
+        overall_stats.loc[dataset_path_prefix]["max_ave_anomaly_ratio"] = max_ave_anomaly_ratio
+        overall_stats.loc[dataset_path_prefix]["ECOD_overall_anomaly_ratio"] = ECOD_overall_anomaly_ratio
+        overall_stats.loc[dataset_path_prefix]["IForest_overall_anomaly_ratio"] = IForest_overall_anomaly_ratio
+        overall_stats.loc[dataset_path_prefix]["ave_overall_anomaly_ratio"] = ave_overall_anomaly_ratio
         
         
-        # logger.info("start multi-dimensional drift detection")
-        # hdddm_drift_percentage, kdq_drift_percentage, ave_drift_percentage, hdddm_warning_percentage, kdq_warning_percentage, ave_warning_percentage = data_drift_detector_multi_dimensional(data_onehot_nonnull, window_size, window_count)
+        logger.info("start multi-dimensional drift detection")
+        hdddm_drift_percentage, kdq_drift_percentage, ave_drift_percentage, hdddm_warning_percentage, kdq_warning_percentage, ave_warning_percentage = data_drift_detector_multi_dimensional(data_onehot_nonnull, window_size, window_count)
         
-        # current_stats.loc[dataset_path_prefix]["hdddm_drift_percentage"] = hdddm_drift_percentage
-        # current_stats.loc[dataset_path_prefix]["kdq_drift_percentage"] = kdq_drift_percentage
-        # current_stats.loc[dataset_path_prefix]["ave_drift_percentage"] = ave_drift_percentage
-        # current_stats.loc[dataset_path_prefix]["hdddm_warning_percentage"] = hdddm_warning_percentage
-        # current_stats.loc[dataset_path_prefix]["kdq_warning_percentage"] = kdq_warning_percentage
-        # current_stats.loc[dataset_path_prefix]["ave_warning_percentage"] = ave_warning_percentage
+        current_stats.loc[dataset_path_prefix]["hdddm_drift_percentage"] = hdddm_drift_percentage
+        current_stats.loc[dataset_path_prefix]["kdq_drift_percentage"] = kdq_drift_percentage
+        current_stats.loc[dataset_path_prefix]["ave_drift_percentage"] = ave_drift_percentage
+        current_stats.loc[dataset_path_prefix]["hdddm_warning_percentage"] = hdddm_warning_percentage
+        current_stats.loc[dataset_path_prefix]["kdq_warning_percentage"] = kdq_warning_percentage
+        current_stats.loc[dataset_path_prefix]["ave_warning_percentage"] = ave_warning_percentage
         
-        # overall_stats.loc[dataset_path_prefix]["hdddm_drift_percentage"] = hdddm_drift_percentage
-        # overall_stats.loc[dataset_path_prefix]["kdq_drift_percentage"] = kdq_drift_percentage
-        # overall_stats.loc[dataset_path_prefix]["ave_drift_percentage"] = ave_drift_percentage
-        # overall_stats.loc[dataset_path_prefix]["hdddm_warning_percentage"] = hdddm_warning_percentage
-        # overall_stats.loc[dataset_path_prefix]["kdq_warning_percentage"] = kdq_warning_percentage
-        # overall_stats.loc[dataset_path_prefix]["ave_warning_percentage"] = ave_warning_percentage
+        overall_stats.loc[dataset_path_prefix]["hdddm_drift_percentage"] = hdddm_drift_percentage
+        overall_stats.loc[dataset_path_prefix]["kdq_drift_percentage"] = kdq_drift_percentage
+        overall_stats.loc[dataset_path_prefix]["ave_drift_percentage"] = ave_drift_percentage
+        overall_stats.loc[dataset_path_prefix]["hdddm_warning_percentage"] = hdddm_warning_percentage
+        overall_stats.loc[dataset_path_prefix]["kdq_warning_percentage"] = kdq_warning_percentage
+        overall_stats.loc[dataset_path_prefix]["ave_warning_percentage"] = ave_warning_percentage
         
-        # logger.info("start one-dimensional drift detection")
-        # ks_ave_drift_percentage, ks_max_drift_percentage, hdddm_ave_drift_percentage, hdddm_max_drift_percentage, kdq_ave_drift_percentage, kdq_max_drift_percentage, cbdb_ave_drift_percentage, cbdb_max_drift_percentage, pca_ave_drift_percentage, pca_max_drift_percentage, ave_drift_percentage, max_drift_percentage, hdddm_ave_warning_percentage, hdddm_max_warning_percentage, kdq_ave_warning_percentage, kdq_max_warning_percentage, cbdb_ave_warning_percentage, cbdb_max_warning_percentage, pca_ave_warning_percentage, pca_max_warning_percentage, ks_ave_warning_percentage, ks_max_warning_percentage, ave_warning_percentage, max_warning_percentage = data_drift_detector_one_dimensional(data_onehot_nonnull, window_size, window_count, new_columns)
-        # logger.info("ks stats")
-        # logger.info(ks_ave_drift_percentage)
-        # logger.info(ks_max_drift_percentage)
-        # current_stats.loc[dataset_path_prefix]["ks_ave_drift_percentage"] = ks_ave_drift_percentage
-        # current_stats.loc[dataset_path_prefix]["ks_max_drift_percentage"] = ks_max_drift_percentage
-        # current_stats.loc[dataset_path_prefix]["hdddm_ave_drift_percentage"] = hdddm_ave_drift_percentage
-        # current_stats.loc[dataset_path_prefix]["hdddm_max_drift_percentage"] = hdddm_max_drift_percentage
-        # current_stats.loc[dataset_path_prefix]["kdq_ave_drift_percentage"] = kdq_ave_drift_percentage
-        # current_stats.loc[dataset_path_prefix]["kdq_max_drift_percentage"] = kdq_max_drift_percentage
-        # current_stats.loc[dataset_path_prefix]["cbdb_ave_drift_percentage"] = cbdb_ave_drift_percentage
-        # current_stats.loc[dataset_path_prefix]["cbdb_max_drift_percentage"] = cbdb_max_drift_percentage
-        # current_stats.loc[dataset_path_prefix]["ave_drift_percentage"] = ave_drift_percentage
-        # current_stats.loc[dataset_path_prefix]["max_drift_percentage"] = max_drift_percentage
-        # current_stats.loc[dataset_path_prefix]["pca_ave_drift_percentage"] = pca_ave_drift_percentage
-        # current_stats.loc[dataset_path_prefix]["pca_max_drift_percentage"] = pca_max_drift_percentage
+        logger.info("start one-dimensional drift detection")
+        ks_ave_drift_percentage, ks_max_drift_percentage, hdddm_ave_drift_percentage, hdddm_max_drift_percentage, kdq_ave_drift_percentage, kdq_max_drift_percentage, cbdb_ave_drift_percentage, cbdb_max_drift_percentage, pca_ave_drift_percentage, pca_max_drift_percentage, ave_drift_percentage, max_drift_percentage, hdddm_ave_warning_percentage, hdddm_max_warning_percentage, kdq_ave_warning_percentage, kdq_max_warning_percentage, cbdb_ave_warning_percentage, cbdb_max_warning_percentage, pca_ave_warning_percentage, pca_max_warning_percentage, ks_ave_warning_percentage, ks_max_warning_percentage, ave_warning_percentage, max_warning_percentage = data_drift_detector_one_dimensional(data_onehot_nonnull, window_size, window_count, new_columns)
+        logger.info("ks stats")
+        logger.info(ks_ave_drift_percentage)
+        logger.info(ks_max_drift_percentage)
+        current_stats.loc[dataset_path_prefix]["ks_ave_drift_percentage"] = ks_ave_drift_percentage
+        current_stats.loc[dataset_path_prefix]["ks_max_drift_percentage"] = ks_max_drift_percentage
+        current_stats.loc[dataset_path_prefix]["hdddm_ave_drift_percentage"] = hdddm_ave_drift_percentage
+        current_stats.loc[dataset_path_prefix]["hdddm_max_drift_percentage"] = hdddm_max_drift_percentage
+        current_stats.loc[dataset_path_prefix]["kdq_ave_drift_percentage"] = kdq_ave_drift_percentage
+        current_stats.loc[dataset_path_prefix]["kdq_max_drift_percentage"] = kdq_max_drift_percentage
+        current_stats.loc[dataset_path_prefix]["cbdb_ave_drift_percentage"] = cbdb_ave_drift_percentage
+        current_stats.loc[dataset_path_prefix]["cbdb_max_drift_percentage"] = cbdb_max_drift_percentage
+        current_stats.loc[dataset_path_prefix]["ave_drift_percentage"] = ave_drift_percentage
+        current_stats.loc[dataset_path_prefix]["max_drift_percentage"] = max_drift_percentage
+        current_stats.loc[dataset_path_prefix]["pca_ave_drift_percentage"] = pca_ave_drift_percentage
+        current_stats.loc[dataset_path_prefix]["pca_max_drift_percentage"] = pca_max_drift_percentage
         
-        # current_stats.loc[dataset_path_prefix]["ks_ave_warning_percentage"] = ks_ave_warning_percentage
-        # current_stats.loc[dataset_path_prefix]["ks_max_warning_percentage"] = ks_max_warning_percentage
-        # current_stats.loc[dataset_path_prefix]["hdddm_ave_warning_percentage"] = hdddm_ave_warning_percentage
-        # current_stats.loc[dataset_path_prefix]["hdddm_max_warning_percentage"] = hdddm_max_warning_percentage
-        # current_stats.loc[dataset_path_prefix]["kdq_ave_warning_percentage"] = kdq_ave_warning_percentage
-        # current_stats.loc[dataset_path_prefix]["kdq_max_warning_percentage"] = kdq_max_warning_percentage
-        # current_stats.loc[dataset_path_prefix]["cbdb_ave_warning_percentage"] = cbdb_ave_warning_percentage
-        # current_stats.loc[dataset_path_prefix]["cbdb_max_warning_percentage"] = cbdb_max_warning_percentage
-        # current_stats.loc[dataset_path_prefix]["ave_warning_percentage"] = ave_warning_percentage
-        # current_stats.loc[dataset_path_prefix]["max_warning_percentage"] = max_warning_percentage
-        # current_stats.loc[dataset_path_prefix]["pca_ave_warning_percentage"] = pca_ave_warning_percentage
-        # current_stats.loc[dataset_path_prefix]["pca_max_warning_percentage"] = pca_max_warning_percentage
+        current_stats.loc[dataset_path_prefix]["ks_ave_warning_percentage"] = ks_ave_warning_percentage
+        current_stats.loc[dataset_path_prefix]["ks_max_warning_percentage"] = ks_max_warning_percentage
+        current_stats.loc[dataset_path_prefix]["hdddm_ave_warning_percentage"] = hdddm_ave_warning_percentage
+        current_stats.loc[dataset_path_prefix]["hdddm_max_warning_percentage"] = hdddm_max_warning_percentage
+        current_stats.loc[dataset_path_prefix]["kdq_ave_warning_percentage"] = kdq_ave_warning_percentage
+        current_stats.loc[dataset_path_prefix]["kdq_max_warning_percentage"] = kdq_max_warning_percentage
+        current_stats.loc[dataset_path_prefix]["cbdb_ave_warning_percentage"] = cbdb_ave_warning_percentage
+        current_stats.loc[dataset_path_prefix]["cbdb_max_warning_percentage"] = cbdb_max_warning_percentage
+        current_stats.loc[dataset_path_prefix]["ave_warning_percentage"] = ave_warning_percentage
+        current_stats.loc[dataset_path_prefix]["max_warning_percentage"] = max_warning_percentage
+        current_stats.loc[dataset_path_prefix]["pca_ave_warning_percentage"] = pca_ave_warning_percentage
+        current_stats.loc[dataset_path_prefix]["pca_max_warning_percentage"] = pca_max_warning_percentage
         
-        # overall_stats.loc[dataset_path_prefix]["ks_ave_drift_percentage"] = ks_ave_drift_percentage
-        # overall_stats.loc[dataset_path_prefix]["ks_max_drift_percentage"] = ks_max_drift_percentage
-        # overall_stats.loc[dataset_path_prefix]["hdddm_ave_drift_percentage"] = hdddm_ave_drift_percentage
-        # overall_stats.loc[dataset_path_prefix]["hdddm_max_drift_percentage"] = hdddm_max_drift_percentage
-        # overall_stats.loc[dataset_path_prefix]["kdq_ave_drift_percentage"] = kdq_ave_drift_percentage
-        # overall_stats.loc[dataset_path_prefix]["kdq_max_drift_percentage"] = kdq_max_drift_percentage
-        # overall_stats.loc[dataset_path_prefix]["cbdb_ave_drift_percentage"] = cbdb_ave_drift_percentage
-        # overall_stats.loc[dataset_path_prefix]["cbdb_max_drift_percentage"] = cbdb_max_drift_percentage
-        # overall_stats.loc[dataset_path_prefix]["ave_drift_percentage"] = ave_drift_percentage
-        # overall_stats.loc[dataset_path_prefix]["max_drift_percentage"] = max_drift_percentage
-        # overall_stats.loc[dataset_path_prefix]["pca_ave_drift_percentage"] = pca_ave_drift_percentage
-        # overall_stats.loc[dataset_path_prefix]["pca_max_drift_percentage"] = pca_max_drift_percentage
+        overall_stats.loc[dataset_path_prefix]["ks_ave_drift_percentage"] = ks_ave_drift_percentage
+        overall_stats.loc[dataset_path_prefix]["ks_max_drift_percentage"] = ks_max_drift_percentage
+        overall_stats.loc[dataset_path_prefix]["hdddm_ave_drift_percentage"] = hdddm_ave_drift_percentage
+        overall_stats.loc[dataset_path_prefix]["hdddm_max_drift_percentage"] = hdddm_max_drift_percentage
+        overall_stats.loc[dataset_path_prefix]["kdq_ave_drift_percentage"] = kdq_ave_drift_percentage
+        overall_stats.loc[dataset_path_prefix]["kdq_max_drift_percentage"] = kdq_max_drift_percentage
+        overall_stats.loc[dataset_path_prefix]["cbdb_ave_drift_percentage"] = cbdb_ave_drift_percentage
+        overall_stats.loc[dataset_path_prefix]["cbdb_max_drift_percentage"] = cbdb_max_drift_percentage
+        overall_stats.loc[dataset_path_prefix]["ave_drift_percentage"] = ave_drift_percentage
+        overall_stats.loc[dataset_path_prefix]["max_drift_percentage"] = max_drift_percentage
+        overall_stats.loc[dataset_path_prefix]["pca_ave_drift_percentage"] = pca_ave_drift_percentage
+        overall_stats.loc[dataset_path_prefix]["pca_max_drift_percentage"] = pca_max_drift_percentage
         
-        # overall_stats.loc[dataset_path_prefix]["ks_ave_warning_percentage"] = ks_ave_warning_percentage
-        # overall_stats.loc[dataset_path_prefix]["ks_max_warning_percentage"] = ks_max_warning_percentage
-        # overall_stats.loc[dataset_path_prefix]["hdddm_ave_warning_percentage"] = hdddm_ave_warning_percentage
-        # overall_stats.loc[dataset_path_prefix]["hdddm_max_warning_percentage"] = hdddm_max_warning_percentage
-        # overall_stats.loc[dataset_path_prefix]["kdq_ave_warning_percentage"] = kdq_ave_warning_percentage
-        # overall_stats.loc[dataset_path_prefix]["kdq_max_warning_percentage"] = kdq_max_warning_percentage
-        # overall_stats.loc[dataset_path_prefix]["cbdb_ave_warning_percentage"] = cbdb_ave_warning_percentage
-        # overall_stats.loc[dataset_path_prefix]["cbdb_max_warning_percentage"] = cbdb_max_warning_percentage
-        # overall_stats.loc[dataset_path_prefix]["ave_warning_percentage"] = ave_warning_percentage
-        # overall_stats.loc[dataset_path_prefix]["max_warning_percentage"] = max_warning_percentage
-        # overall_stats.loc[dataset_path_prefix]["pca_ave_warning_percentage"] = pca_ave_warning_percentage
-        # overall_stats.loc[dataset_path_prefix]["pca_max_warning_percentage"] = pca_max_warning_percentage
+        overall_stats.loc[dataset_path_prefix]["ks_ave_warning_percentage"] = ks_ave_warning_percentage
+        overall_stats.loc[dataset_path_prefix]["ks_max_warning_percentage"] = ks_max_warning_percentage
+        overall_stats.loc[dataset_path_prefix]["hdddm_ave_warning_percentage"] = hdddm_ave_warning_percentage
+        overall_stats.loc[dataset_path_prefix]["hdddm_max_warning_percentage"] = hdddm_max_warning_percentage
+        overall_stats.loc[dataset_path_prefix]["kdq_ave_warning_percentage"] = kdq_ave_warning_percentage
+        overall_stats.loc[dataset_path_prefix]["kdq_max_warning_percentage"] = kdq_max_warning_percentage
+        overall_stats.loc[dataset_path_prefix]["cbdb_ave_warning_percentage"] = cbdb_ave_warning_percentage
+        overall_stats.loc[dataset_path_prefix]["cbdb_max_warning_percentage"] = cbdb_max_warning_percentage
+        overall_stats.loc[dataset_path_prefix]["ave_warning_percentage"] = ave_warning_percentage
+        overall_stats.loc[dataset_path_prefix]["max_warning_percentage"] = max_warning_percentage
+        overall_stats.loc[dataset_path_prefix]["pca_ave_warning_percentage"] = pca_ave_warning_percentage
+        overall_stats.loc[dataset_path_prefix]["pca_max_warning_percentage"] = pca_max_warning_percentage
         
-        # try:
-        #     concept_drift_ratio = PERM(task, data_onehot_nonnull, target_data_nonnull, window_size, window_count, 20, 0.02, 0.05)
+        try:
+            concept_drift_ratio = PERM(task, data_onehot_nonnull, target_data_nonnull, window_size, window_count, 20, 0.02, 0.05)
             
-        #     current_concept_drift_stats = pd.DataFrame(index = dataset_prefix_list, columns=["concept_drift_ratio"])
-        #     overall_concept_drift_stats = pd.DataFrame(index = dataset_prefix_list, columns=["concept_drift_ratio"])
-        #     current_concept_drift_stats.loc[dataset_path_prefix]["concept_drift_ratio"] = concept_drift_ratio
-        #     overall_concept_drift_stats.loc[dataset_path_prefix]["concept_drift_ratio"] = concept_drift_ratio
+            current_concept_drift_stats = pd.DataFrame(index = dataset_prefix_list, columns=["concept_drift_ratio"])
+            overall_concept_drift_stats = pd.DataFrame(index = dataset_prefix_list, columns=["concept_drift_ratio"])
+            current_concept_drift_stats.loc[dataset_path_prefix]["concept_drift_ratio"] = concept_drift_ratio
+            overall_concept_drift_stats.loc[dataset_path_prefix]["concept_drift_ratio"] = concept_drift_ratio
+            overall_stats.loc[dataset_path_prefix]["concept_drift_ratio"] = concept_drift_ratio
+            
+            current_concept_drift_stats.to_csv(dataset_path_prefix + '/concept_drift_stats.csv', mode='w')
+            
+            done.append(dataset_path_prefix)
+            logger.info(done)
+        except:
+            pass
+            #continue
+        '''
+        concept_drift_ratio = PERM(task, data_onehot_nonnull, target_data_nonnull, window_size, window_count, 20, 0.02, 0.05)
+            
+        current_concept_drift_stats = pd.DataFrame(index = dataset_prefix_list, columns=["concept_drift_ratio"])
+        overall_concept_drift_stats = pd.DataFrame(index = dataset_prefix_list, columns=["concept_drift_ratio"])
+        current_concept_drift_stats.loc[dataset_path_prefix]["concept_drift_ratio"] = concept_drift_ratio           
+        overall_concept_drift_stats.loc[dataset_path_prefix]["concept_drift_ratio"] = concept_drift_ratio
             
             
-        #     current_concept_drift_stats.to_csv(dataset_path_prefix + '/concept_drift_stats.csv', mode='w')
-            
-        #     done.append(dataset_path_prefix)
-        #     logger.info(done)
-        # except:
-        #     continue
-        # concept_drift_ratio = PERM(task, data_onehot_nonnull, target_data_nonnull, window_size, window_count, 20, 0.02, 0.05)
-            
-        # current_concept_drift_stats = pd.DataFrame(index = dataset_prefix_list, columns=["concept_drift_ratio"])
-        # overall_concept_drift_stats = pd.DataFrame(index = dataset_prefix_list, columns=["concept_drift_ratio"])
-        # current_concept_drift_stats.loc[dataset_path_prefix]["concept_drift_ratio"] = concept_drift_ratio           
-        # overall_concept_drift_stats.loc[dataset_path_prefix]["concept_drift_ratio"] = concept_drift_ratio
-            
-            
-        # current_concept_drift_stats.to_csv(dataset_path_prefix + '/concept_drift_stats.csv', mode='w')
-            
-        # done.append(dataset_path_prefix)
-        # logger.info(done)
+        current_concept_drift_stats.to_csv(dataset_path_prefix + '/concept_drift_stats.csv', mode='w')
+        '''
+        done.append(dataset_path_prefix)
+        logger.info(done)
         
         adwin, ddm, eddm, ave, adwin_warning, ddm_warning, eddm_warning, warning_ave = concept_drift(task, data_onehot_nonnull, target_data_nonnull, window_size, window_count)
         
@@ -1226,6 +1228,15 @@ def run_pipeline(dataset_prefix_list, done):
         current_concept_drift_stats.loc[dataset_path_prefix]["eddm_warning"] = eddm_warning
         current_concept_drift_stats.loc[dataset_path_prefix]["ave_warning"] = warning_ave
 
+        overall_stats.loc[dataset_path_prefix]["adwin"] = adwin
+        overall_stats.loc[dataset_path_prefix]["ddm"] = ddm
+        overall_stats.loc[dataset_path_prefix]["eddm"] = eddm
+        overall_stats.loc[dataset_path_prefix]["ave"] = ave
+        
+        overall_stats.loc[dataset_path_prefix]["adwin_warning"] = adwin_warning
+        overall_stats.loc[dataset_path_prefix]["ddm_warning"] = ddm_warning
+        overall_stats.loc[dataset_path_prefix]["eddm_warning"] = eddm_warning
+        overall_stats.loc[dataset_path_prefix]["ave_warning"] = warning_ave
         
         
         current_concept_drift_stats.to_csv(dataset_path_prefix + '/menelaus_concept_drift_stats.csv', mode='w')
