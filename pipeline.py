@@ -115,6 +115,10 @@ def data_preprocessing(dataset_path_prefix, data_path, schema_path, task):
     data_before_onehot = data
         
     target_data = data[target]
+    if task == "classification":
+        #logger.info(target_data[target[0]])
+        target_data[target[0]] = pd.factorize(target_data[target[0]])[0]
+        #logger.info(target_data)
     
     data = data.drop(unnecessary, axis=1)
     data = data.drop(timestamp, axis=1)
