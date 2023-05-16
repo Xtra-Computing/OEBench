@@ -39,24 +39,25 @@ def mkdirs(dirpath):
     except Exception as _:
         pass
 
-mkdirs("logs/")
+if __name__ == "__main__":
+    mkdirs("logs/")
 
-for handler in logging.root.handlers[:]:
-    logging.root.removeHandler(handler)
+    for handler in logging.root.handlers[:]:
+        logging.root.removeHandler(handler)
 
-log_file_name = 'logs/experiment_log-%s.log' % (datetime.datetime.now().strftime("%Y-%m-%d-%H:%M-%S"))
+    log_file_name = 'logs/experiment_log-%s.log' % (datetime.datetime.now().strftime("%Y-%m-%d-%H:%M-%S"))
 
-logging.basicConfig(
-    filename=log_file_name,
-    format='%(asctime)s %(levelname)-8s %(message)s',
-    datefmt='%m-%d %H:%M', level=logging.INFO, filemode='w')
+    logging.basicConfig(
+        filename=log_file_name,
+        format='%(asctime)s %(levelname)-8s %(message)s',
+        datefmt='%m-%d %H:%M', level=logging.INFO, filemode='w')
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
 
 def schema_parser(path):
     info_path = path+'/info.json'
-    logger.info(info_path)
+    print(info_path)
     with open(info_path, 'r') as f:
         info = json.load(f)
         schema_path = path+"/"+info["schema"]
@@ -64,7 +65,7 @@ def schema_parser(path):
         task = info["task"]
     return data_path, schema_path, task
 
-def data_preprocessing(dataset_path_prefix, data_path, schema_path, task):
+def data_preprocessing(dataset_path_prefix, data_path, schema_path, task, logger, delete_null_target=False):
     with open(schema_path, 'r') as f:
         schema = json.load(f)
         # numerical = schema["numerical"]
@@ -93,6 +94,9 @@ def data_preprocessing(dataset_path_prefix, data_path, schema_path, task):
         data = data.replace(value, np.nan)
         logger.info("done")
     logger.info("replaced with null")
+
+    if delete_null_target:
+        data = data.dropna(subset=[target])
     
     logger.info("start sorting")
     try:
@@ -113,7 +117,7 @@ def data_preprocessing(dataset_path_prefix, data_path, schema_path, task):
     #         data[col] = pd.to_datetime(data[col])
     #     data = data.sort_values(timestamp, ascending=True)
     data_before_onehot = data
-        
+    #logger.info(data)
     target_data = data[target]
     if task == "classification":
         #logger.info(target_data[target[0]])
@@ -131,6 +135,8 @@ def data_preprocessing(dataset_path_prefix, data_path, schema_path, task):
     new_columns = data_one_hot.columns
     logger.info(new_columns)
     new_column_count = new_columns.shape[0]
+    if delete_null_target:
+        return pd.DataFrame(data_one_hot), pd.DataFrame(target_data)
     
     #try:
     #    data_onehot_nonnull_path = dataset_path_prefix+'/onehot_nonnull.csv'
@@ -152,12 +158,12 @@ def data_preprocessing(dataset_path_prefix, data_path, schema_path, task):
             try:
                 try:
                     data_onehot_nonnull = imp.fit_transform(data_one_hot)
-                    data_onehot_nonnull = pd.DataFrame(data_onehot_nonnull, columns=temp_columns)
+                    data_onehot_nonnull = pd.DataFrame(data_onehot_nonnull.values, columns=temp_columns)
                 except:
                     for col in new_columns:
                         data_one_hot[col] = pd.to_numeric(data_one_hot[col], errors='coerce')
                     data_onehot_nonnull = imp.fit_transform(data_one_hot)
-                    data_onehot_nonnull = pd.DataFrame(data_onehot_nonnull, columns=temp_columns)
+                    data_onehot_nonnull = pd.DataFrame(data_onehot_nonnull.values, columns=temp_columns)
             except:
                 data_one_hot = data_one_hot.dropna(subset=target)
                 target_data = data_one_hot[target]
@@ -170,7 +176,7 @@ def data_preprocessing(dataset_path_prefix, data_path, schema_path, task):
                     logger.info("done")
                     # data_onehot_nonnull[target] = target_data
                     data_onehot_nonnull = data_onehot_nonnull.assign(target=target_data)
-                    data_onehot_nonnull = pd.DataFrame(data_onehot_nonnull, columns=temp_columns)
+                    data_onehot_nonnull = pd.DataFrame(data_onehot_nonnull.values, columns=temp_columns)
                 except:
                     logger.info("non numeric")
                     for col in new_columns:
@@ -182,7 +188,7 @@ def data_preprocessing(dataset_path_prefix, data_path, schema_path, task):
                     
                     # data_onehot_nonnull[target] = target_data
                     data_onehot_nonnull = data_onehot_nonnull.assign(target=target_data)
-                    data_onehot_nonnull = pd.DataFrame(data_onehot_nonnull, columns=temp_columns)
+                    data_onehot_nonnull = pd.DataFrame(data_onehot_nonnull.values, columns=temp_columns)
             # temp_columns = pd.DataFrame(new_columns).append(target)
 
         else:
@@ -217,6 +223,7 @@ def data_preprocessing(dataset_path_prefix, data_path, schema_path, task):
     #     logger.info("no null")
     #     data_onehot_nonnull = data_one_hot
     logger.info(data_onehot_nonnull.isnull().values.any())
+    
     return pd.DataFrame(target_data), pd.DataFrame(original_data), pd.DataFrame(data_onehot_nonnull), total_columns, window_size, row_count, original_column_count, new_columns, new_column_count
 
 
@@ -1058,7 +1065,7 @@ def run_pipeline(dataset_prefix_list, done):
         
         logger.info("start pre-processing")
         
-        target_data_nonnull, data_before_onehot, data_onehot_nonnull, original_columns, window_size, row_count, original_column_count, new_columns, new_column_count = data_preprocessing(dataset_path_prefix, data_path, schema_path, task)
+        target_data_nonnull, data_before_onehot, data_onehot_nonnull, original_columns, window_size, row_count, original_column_count, new_columns, new_column_count = data_preprocessing(dataset_path_prefix, data_path, schema_path, task, logger)
         logger.info("preprocessing done")
         current_stats.loc[dataset_path_prefix]["size"] = row_count
         current_stats.loc[dataset_path_prefix]["#columns"] = original_column_count
@@ -1256,30 +1263,31 @@ def run_pipeline(dataset_prefix_list, done):
 # done = ['dataset_experiment_info/rssi']
 # done = ['dataset_experiment_info/household','dataset_experiment_info/luxembourg', 'dataset_experiment_info/beijingPM2.5', 'dataset_experiment_info/airbnb', 'dataset_experiment_info/bitcoin', 'dataset_experiment_info/airlines', 'dataset_experiment_info/italian_city_airquality', 'dataset_experiment_info/airbnb', 'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/bike_sharing_demand', 'dataset_experiment_info/noaa', 'dataset_experiment_info/electricity_prices', 'dataset_experiment_info/tetouan', 'dataset_experiment_info/beijing_multisite/wanliu', 'dataset_experiment_info/beijing_multisite/wanshouxingong', 'dataset_experiment_info/beijing_multisite/gucheng', 'dataset_experiment_info/beijing_multisite/huairou', 'dataset_experiment_info/beijing_multisite/nongzhanguan', 'dataset_experiment_info/beijing_multisite/changping', 'dataset_experiment_info/beijing_multisite/dingling', 'dataset_experiment_info/beijing_multisite/aotizhongxin', 'dataset_experiment_info/beijing_multisite/dongsi', 'dataset_experiment_info/beijing_multisite/shunyi', 'dataset_experiment_info/beijing_multisite/guanyuan', 'dataset_experiment_info/beijing_multisite/tiantan', 'dataset_experiment_info/insects/abrupt_imbalanced', 'dataset_experiment_info/insects/out-of-control', 'dataset_experiment_info/insects/incremental_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_balanced', 'dataset_experiment_info/insects/incremental_balanced', 'dataset_experiment_info/insects/incremental_abrupt_balanced', 'dataset_experiment_info/insects/gradual_imbalanced', 'dataset_experiment_info/insects/abrupt_balanced', 'dataset_experiment_info/insects/incremental_abrupt_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_imbalanced', 'dataset_experiment_info/insects/gradual_balanced']
 
-rootdir = "dataset_experiment_info"
-dataset_prefix_list = [x[0] for x in os.walk(rootdir)]
+if __name__ == "__main__":
+    rootdir = "dataset_experiment_info"
+    dataset_prefix_list = [x[0] for x in os.walk(rootdir)]
 
-# dataset_prefix_list = ['dataset_experiment_info/weather_indian_cities/lucknow']
-logger.info(dataset_prefix_list)
-# done = ['dataset_experiment_info/airlines', 'dataset_experiment_info/airbnb', 'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/bike_sharing_demand', 'dataset_experiment_info/rssi', 'dataset_experiment_info/KDDCUP99', 'dataset_experiment_info/electricity_prices', 
-#         'dataset_experiment_info/tetouan', 'dataset_experiment_info/beijing_multisite/wanliu', 'dataset_experiment_info/beijing_multisite/wanshouxingong', 'dataset_experiment_info/beijing_multisite/gucheng', 'dataset_experiment_info/beijing_multisite/huairou', 
-#         'dataset_experiment_info/beijing_multisite/nongzhanguan', 'dataset_experiment_info/beijing_multisite/changping', 'dataset_experiment_info/beijing_multisite/dingling', 'dataset_experiment_info/beijing_multisite/aotizhongxin',
-#         'dataset_experiment_info/beijing_multisite/dongsi', 'dataset_experiment_info/beijing_multisite/shunyi', 'dataset_experiment_info/beijing_multisite/guanyuan', 'dataset_experiment_info/beijing_multisite/tiantan', 'dataset_experiment_info/weather_indian_cities/bangalore', 
-#         'dataset_experiment_info/weather_indian_cities/lucknow', 'dataset_experiment_info/weather_indian_cities/mumbai', 'dataset_experiment_info/weather_indian_cities/Rajasthan', 'dataset_experiment_info/weather_indian_cities/Bhubhneshwar', 
-#         'dataset_experiment_info/weather_indian_cities/delhi', 'dataset_experiment_info/weather_indian_cities/chennai', 'dataset_experiment_info/insects/abrupt_imbalanced', 'dataset_experiment_info/insects/out-of-control', 'dataset_experiment_info/insects/incremental_imbalanced', 
-#         'dataset_experiment_info/insects/incremental_balanced', 'dataset_experiment_info/insects/gradual_imbalanced', 'dataset_experiment_info/insects/incremental_abrupt_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_imbalanced', 
-#         'dataset_experiment_info/italian_city_airquality', 'dataset_experiment_info/taxi_ride_duration', 'dataset_experiment_info/rialto', 'dataset_experiment_info/noaa']
+    # dataset_prefix_list = ['dataset_experiment_info/weather_indian_cities/lucknow']
+    logger.info(dataset_prefix_list)
+    # done = ['dataset_experiment_info/airlines', 'dataset_experiment_info/airbnb', 'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/bike_sharing_demand', 'dataset_experiment_info/rssi', 'dataset_experiment_info/KDDCUP99', 'dataset_experiment_info/electricity_prices', 
+    #         'dataset_experiment_info/tetouan', 'dataset_experiment_info/beijing_multisite/wanliu', 'dataset_experiment_info/beijing_multisite/wanshouxingong', 'dataset_experiment_info/beijing_multisite/gucheng', 'dataset_experiment_info/beijing_multisite/huairou', 
+    #         'dataset_experiment_info/beijing_multisite/nongzhanguan', 'dataset_experiment_info/beijing_multisite/changping', 'dataset_experiment_info/beijing_multisite/dingling', 'dataset_experiment_info/beijing_multisite/aotizhongxin',
+    #         'dataset_experiment_info/beijing_multisite/dongsi', 'dataset_experiment_info/beijing_multisite/shunyi', 'dataset_experiment_info/beijing_multisite/guanyuan', 'dataset_experiment_info/beijing_multisite/tiantan', 'dataset_experiment_info/weather_indian_cities/bangalore', 
+    #         'dataset_experiment_info/weather_indian_cities/lucknow', 'dataset_experiment_info/weather_indian_cities/mumbai', 'dataset_experiment_info/weather_indian_cities/Rajasthan', 'dataset_experiment_info/weather_indian_cities/Bhubhneshwar', 
+    #         'dataset_experiment_info/weather_indian_cities/delhi', 'dataset_experiment_info/weather_indian_cities/chennai', 'dataset_experiment_info/insects/abrupt_imbalanced', 'dataset_experiment_info/insects/out-of-control', 'dataset_experiment_info/insects/incremental_imbalanced', 
+    #         'dataset_experiment_info/insects/incremental_balanced', 'dataset_experiment_info/insects/gradual_imbalanced', 'dataset_experiment_info/insects/incremental_abrupt_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_imbalanced', 
+    #         'dataset_experiment_info/italian_city_airquality', 'dataset_experiment_info/taxi_ride_duration', 'dataset_experiment_info/rialto', 'dataset_experiment_info/noaa']
 
-# done = ['dataset_experiment_info/airlines', 'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/bike_sharing_demand']
-# done = []
-# done = ['dataset_experiment_info/bitcoin', 'dataset_experiment_info/airbnb' ,'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/bike_sharing_demand', 'dataset_experiment_info/rssi', 'dataset_experiment_info/noaa', 'dataset_experiment_info/KDDCUP99', 'dataset_experiment_info/electricity_prices', 'dataset_experiment_info/tetouan', 'dataset_experiment_info/beijing_multisite/wanliu', 'dataset_experiment_info/beijing_multisite/wanshouxingong', 'dataset_experiment_info/beijing_multisite/gucheng', 'dataset_experiment_info/beijing_multisite/huairou', 'dataset_experiment_info/beijing_multisite/nongzhanguan', 'dataset_experiment_info/beijing_multisite/changping', 'dataset_experiment_info/beijing_multisite/dingling', 'dataset_experiment_info/beijing_multisite/aotizhongxin', 'dataset_experiment_info/beijing_multisite/dongsi', 'dataset_experiment_info/beijing_multisite/shunyi', 'dataset_experiment_info/beijing_multisite/guanyuan', 'dataset_experiment_info/beijing_multisite/tiantan', 'dataset_experiment_info/weather_indian_cities/bangalore', 'dataset_experiment_info/weather_indian_cities/lucknow', 'dataset_experiment_info/weather_indian_cities/mumbai', 'dataset_experiment_info/weather_indian_cities/Rajasthan', 'dataset_experiment_info/weather_indian_cities/Bhubhneshwar', 'dataset_experiment_info/weather_indian_cities/delhi', 'dataset_experiment_info/weather_indian_cities/chennai', 'dataset_experiment_info/insects/abrupt_imbalanced', 'dataset_experiment_info/insects/out-of-control', 'dataset_experiment_info/insects/incremental_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_balanced', 'dataset_experiment_info/insects/incremental_balanced', 'dataset_experiment_info/insects/incremental_abrupt_balanced', 'dataset_experiment_info/insects/gradual_imbalanced', 'dataset_experiment_info/insects/abrupt_balanced', 'dataset_experiment_info/insects/incremental_abrupt_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_imbalanced', 'dataset_experiment_info/insects/gradual_balanced', 'dataset_experiment_info/italian_city_airquality', 'dataset_experiment_info/taxi_ride_duration']
-# done = ['dataset_experiment_info/airlines', 'dataset_experiment_info/bitcoin', 'dataset_experiment_info/airbnb', 'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/bike_sharing_demand', 'dataset_experiment_info/rssi', 'dataset_experiment_info/noaa', 'dataset_experiment_info/KDDCUP99', 'dataset_experiment_info/electricity_prices', 'dataset_experiment_info/tetouan', 'dataset_experiment_info/beijing_multisite/wanliu', 'dataset_experiment_info/beijing_multisite/wanshouxingong', 'dataset_experiment_info/beijing_multisite/gucheng', 'dataset_experiment_info/beijing_multisite/huairou', 'dataset_experiment_info/beijing_multisite/nongzhanguan', 'dataset_experiment_info/beijing_multisite/changping', 'dataset_experiment_info/beijing_multisite/dingling', 'dataset_experiment_info/beijing_multisite/aotizhongxin', 'dataset_experiment_info/beijing_multisite/dongsi', 'dataset_experiment_info/beijing_multisite/shunyi', 'dataset_experiment_info/beijing_multisite/guanyuan', 'dataset_experiment_info/beijing_multisite/tiantan', 'dataset_experiment_info/weather_indian_cities/bangalore', 'dataset_experiment_info/weather_indian_cities/lucknow', 'dataset_experiment_info/weather_indian_cities/mumbai', 'dataset_experiment_info/weather_indian_cities/Rajasthan', 'dataset_experiment_info/weather_indian_cities/Bhubhneshwar', 'dataset_experiment_info/weather_indian_cities/delhi', 'dataset_experiment_info/weather_indian_cities/chennai', 'dataset_experiment_info/insects/abrupt_imbalanced', 'dataset_experiment_info/insects/out-of-control', 'dataset_experiment_info/insects/incremental_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_balanced', 'dataset_experiment_info/insects/incremental_balanced', 'dataset_experiment_info/insects/incremental_abrupt_balanced', 'dataset_experiment_info/insects/gradual_imbalanced', 'dataset_experiment_info/insects/abrupt_balanced', 'dataset_experiment_info/insects/incremental_abrupt_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_imbalanced', 'dataset_experiment_info/insects/gradual_balanced', 'dataset_experiment_info/italian_city_airquality', 'dataset_experiment_info/taxi_ride_duration', 'dataset_experiment_info/room_occupancy', 'dataset_experiment_info/rialto']
-# 'dataset_experiment_info/airlines', 'dataset_experiment_info/bitcoin', 'dataset_experiment_info/airbnb'
+    # done = ['dataset_experiment_info/airlines', 'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/bike_sharing_demand']
+    # done = []
+    # done = ['dataset_experiment_info/bitcoin', 'dataset_experiment_info/airbnb' ,'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/bike_sharing_demand', 'dataset_experiment_info/rssi', 'dataset_experiment_info/noaa', 'dataset_experiment_info/KDDCUP99', 'dataset_experiment_info/electricity_prices', 'dataset_experiment_info/tetouan', 'dataset_experiment_info/beijing_multisite/wanliu', 'dataset_experiment_info/beijing_multisite/wanshouxingong', 'dataset_experiment_info/beijing_multisite/gucheng', 'dataset_experiment_info/beijing_multisite/huairou', 'dataset_experiment_info/beijing_multisite/nongzhanguan', 'dataset_experiment_info/beijing_multisite/changping', 'dataset_experiment_info/beijing_multisite/dingling', 'dataset_experiment_info/beijing_multisite/aotizhongxin', 'dataset_experiment_info/beijing_multisite/dongsi', 'dataset_experiment_info/beijing_multisite/shunyi', 'dataset_experiment_info/beijing_multisite/guanyuan', 'dataset_experiment_info/beijing_multisite/tiantan', 'dataset_experiment_info/weather_indian_cities/bangalore', 'dataset_experiment_info/weather_indian_cities/lucknow', 'dataset_experiment_info/weather_indian_cities/mumbai', 'dataset_experiment_info/weather_indian_cities/Rajasthan', 'dataset_experiment_info/weather_indian_cities/Bhubhneshwar', 'dataset_experiment_info/weather_indian_cities/delhi', 'dataset_experiment_info/weather_indian_cities/chennai', 'dataset_experiment_info/insects/abrupt_imbalanced', 'dataset_experiment_info/insects/out-of-control', 'dataset_experiment_info/insects/incremental_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_balanced', 'dataset_experiment_info/insects/incremental_balanced', 'dataset_experiment_info/insects/incremental_abrupt_balanced', 'dataset_experiment_info/insects/gradual_imbalanced', 'dataset_experiment_info/insects/abrupt_balanced', 'dataset_experiment_info/insects/incremental_abrupt_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_imbalanced', 'dataset_experiment_info/insects/gradual_balanced', 'dataset_experiment_info/italian_city_airquality', 'dataset_experiment_info/taxi_ride_duration']
+    # done = ['dataset_experiment_info/airlines', 'dataset_experiment_info/bitcoin', 'dataset_experiment_info/airbnb', 'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/bike_sharing_demand', 'dataset_experiment_info/rssi', 'dataset_experiment_info/noaa', 'dataset_experiment_info/KDDCUP99', 'dataset_experiment_info/electricity_prices', 'dataset_experiment_info/tetouan', 'dataset_experiment_info/beijing_multisite/wanliu', 'dataset_experiment_info/beijing_multisite/wanshouxingong', 'dataset_experiment_info/beijing_multisite/gucheng', 'dataset_experiment_info/beijing_multisite/huairou', 'dataset_experiment_info/beijing_multisite/nongzhanguan', 'dataset_experiment_info/beijing_multisite/changping', 'dataset_experiment_info/beijing_multisite/dingling', 'dataset_experiment_info/beijing_multisite/aotizhongxin', 'dataset_experiment_info/beijing_multisite/dongsi', 'dataset_experiment_info/beijing_multisite/shunyi', 'dataset_experiment_info/beijing_multisite/guanyuan', 'dataset_experiment_info/beijing_multisite/tiantan', 'dataset_experiment_info/weather_indian_cities/bangalore', 'dataset_experiment_info/weather_indian_cities/lucknow', 'dataset_experiment_info/weather_indian_cities/mumbai', 'dataset_experiment_info/weather_indian_cities/Rajasthan', 'dataset_experiment_info/weather_indian_cities/Bhubhneshwar', 'dataset_experiment_info/weather_indian_cities/delhi', 'dataset_experiment_info/weather_indian_cities/chennai', 'dataset_experiment_info/insects/abrupt_imbalanced', 'dataset_experiment_info/insects/out-of-control', 'dataset_experiment_info/insects/incremental_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_balanced', 'dataset_experiment_info/insects/incremental_balanced', 'dataset_experiment_info/insects/incremental_abrupt_balanced', 'dataset_experiment_info/insects/gradual_imbalanced', 'dataset_experiment_info/insects/abrupt_balanced', 'dataset_experiment_info/insects/incremental_abrupt_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_imbalanced', 'dataset_experiment_info/insects/gradual_balanced', 'dataset_experiment_info/italian_city_airquality', 'dataset_experiment_info/taxi_ride_duration', 'dataset_experiment_info/room_occupancy', 'dataset_experiment_info/rialto']
+    # 'dataset_experiment_info/airlines', 'dataset_experiment_info/bitcoin', 'dataset_experiment_info/airbnb'
 
-# done=['dataset_experiment_info/house_rent', 'dataset_experiment_info/airbnb', 'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/bike_sharing_demand', 'dataset_experiment_info/rssi', 'dataset_experiment_info/noaa', 'dataset_experiment_info/KDDCUP99', 'dataset_experiment_info/electricity_prices', 'dataset_experiment_info/tetouan', 'dataset_experiment_info/beijing_multisite/wanliu', 'dataset_experiment_info/beijing_multisite/wanshouxingong', 'dataset_experiment_info/beijing_multisite/gucheng', 'dataset_experiment_info/beijing_multisite/huairou', 'dataset_experiment_info/beijing_multisite/nongzhanguan', 'dataset_experiment_info/beijing_multisite/changping', 'dataset_experiment_info/beijing_multisite/dingling', 'dataset_experiment_info/beijing_multisite/aotizhongxin', 'dataset_experiment_info/beijing_multisite/dongsi', 'dataset_experiment_info/beijing_multisite/shunyi', 'dataset_experiment_info/beijing_multisite/guanyuan', 'dataset_experiment_info/beijing_multisite/tiantan', 'dataset_experiment_info/weather_indian_cities/bangalore', 'dataset_experiment_info/weather_indian_cities/lucknow', 'dataset_experiment_info/weather_indian_cities/mumbai', 'dataset_experiment_info/weather_indian_cities/Rajasthan', 'dataset_experiment_info/weather_indian_cities/Bhubhneshwar', 'dataset_experiment_info/weather_indian_cities/delhi', 'dataset_experiment_info/weather_indian_cities/chennai', 'dataset_experiment_info/insects/abrupt_imbalanced', 'dataset_experiment_info/insects/out-of-control', 'dataset_experiment_info/insects/incremental_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_balanced', 'dataset_experiment_info/insects/incremental_balanced', 'dataset_experiment_info/insects/incremental_abrupt_balanced', 'dataset_experiment_info/insects/gradual_imbalanced', 'dataset_experiment_info/insects/abrupt_balanced', 'dataset_experiment_info/insects/incremental_abrupt_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_imbalanced', 'dataset_experiment_info/insects/gradual_balanced', 'dataset_experiment_info/italian_city_airquality', 'dataset_experiment_info/taxi_ride_duration', 'dataset_experiment_info/room_occupancy', 'dataset_experiment_info/rialto', 'dataset_experiment_info/traffic_volumn', 'dataset_experiment_info/news_popularity', 'dataset_experiment_info/beijingPM2.5', 'dataset_experiment_info/energy_prediction', 'dataset_experiment_info/household', 'dataset_experiment_info/election', 'dataset_experiment_info/covtype']
-done = ['dataset_experiment_info/airbnb']
-#dataset_prefix_list = ['dataset_experiment_info/household']
+    # done=['dataset_experiment_info/house_rent', 'dataset_experiment_info/airbnb', 'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/bike_sharing_demand', 'dataset_experiment_info/rssi', 'dataset_experiment_info/noaa', 'dataset_experiment_info/KDDCUP99', 'dataset_experiment_info/electricity_prices', 'dataset_experiment_info/tetouan', 'dataset_experiment_info/beijing_multisite/wanliu', 'dataset_experiment_info/beijing_multisite/wanshouxingong', 'dataset_experiment_info/beijing_multisite/gucheng', 'dataset_experiment_info/beijing_multisite/huairou', 'dataset_experiment_info/beijing_multisite/nongzhanguan', 'dataset_experiment_info/beijing_multisite/changping', 'dataset_experiment_info/beijing_multisite/dingling', 'dataset_experiment_info/beijing_multisite/aotizhongxin', 'dataset_experiment_info/beijing_multisite/dongsi', 'dataset_experiment_info/beijing_multisite/shunyi', 'dataset_experiment_info/beijing_multisite/guanyuan', 'dataset_experiment_info/beijing_multisite/tiantan', 'dataset_experiment_info/weather_indian_cities/bangalore', 'dataset_experiment_info/weather_indian_cities/lucknow', 'dataset_experiment_info/weather_indian_cities/mumbai', 'dataset_experiment_info/weather_indian_cities/Rajasthan', 'dataset_experiment_info/weather_indian_cities/Bhubhneshwar', 'dataset_experiment_info/weather_indian_cities/delhi', 'dataset_experiment_info/weather_indian_cities/chennai', 'dataset_experiment_info/insects/abrupt_imbalanced', 'dataset_experiment_info/insects/out-of-control', 'dataset_experiment_info/insects/incremental_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_balanced', 'dataset_experiment_info/insects/incremental_balanced', 'dataset_experiment_info/insects/incremental_abrupt_balanced', 'dataset_experiment_info/insects/gradual_imbalanced', 'dataset_experiment_info/insects/abrupt_balanced', 'dataset_experiment_info/insects/incremental_abrupt_imbalanced', 'dataset_experiment_info/insects/incremental_reoccurring_imbalanced', 'dataset_experiment_info/insects/gradual_balanced', 'dataset_experiment_info/italian_city_airquality', 'dataset_experiment_info/taxi_ride_duration', 'dataset_experiment_info/room_occupancy', 'dataset_experiment_info/rialto', 'dataset_experiment_info/traffic_volumn', 'dataset_experiment_info/news_popularity', 'dataset_experiment_info/beijingPM2.5', 'dataset_experiment_info/energy_prediction', 'dataset_experiment_info/household', 'dataset_experiment_info/election', 'dataset_experiment_info/covtype']
+    done = ['dataset_experiment_info/airbnb']
+    #dataset_prefix_list = ['dataset_experiment_info/household']
+    #done=['dataset_experiment_info/airbnb', 'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/bike_sharing_demand', 'dataset_experiment_info/bike_sharing_demand', 'dataset_experiment_info/bike_sharing_demand', 'dataset_experiment_info/rssi', 'dataset_experiment_info/rssi', 'dataset_experiment_info/rssi', 'dataset_experiment_info/noaa', 'dataset_experiment_info/noaa', 'dataset_experiment_info/noaa', 'dataset_experiment_info/KDDCUP99', 'dataset_experiment_info/KDDCUP99', 'dataset_experiment_info/KDDCUP99', 'dataset_experiment_info/electricity_prices', 'dataset_experiment_info/electricity_prices', 'dataset_experiment_info/electricity_prices', 'dataset_experiment_info/tetouan', 'dataset_experiment_info/tetouan', 'dataset_experiment_info/tetouan', 'dataset_experiment_info/italian_city_airquality', 'dataset_experiment_info/italian_city_airquality', 'dataset_experiment_info/italian_city_airquality', 'dataset_experiment_info/powersupply', 'dataset_experiment_info/powersupply', 'dataset_experiment_info/powersupply', 'dataset_experiment_info/taxi_ride_duration', 'dataset_experiment_info/taxi_ride_duration', 'dataset_experiment_info/taxi_ride_duration', 'dataset_experiment_info/room_occupancy', 'dataset_experiment_info/room_occupancy', 'dataset_experiment_info/room_occupancy']
 
-
-run_pipeline(dataset_prefix_list, done)
+    run_pipeline(dataset_prefix_list, done)
 
