@@ -19,6 +19,7 @@ This project requires the following Python packages:
 - numpy
 - pandas
 - scikit-learn
+- scikit-multiflow
 - scipy
 - pyod
 - Keras
