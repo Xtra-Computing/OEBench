@@ -17,7 +17,7 @@ import torch.nn.functional as F
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--model', type=str, default='mlp', help='model used in training')
-    parser.add_argument('--gbdt', type=bool, default=False, help='whether to use gbdt for tree model')
+    parser.add_argument('--gbdt', type=int, default=0, help='whether to use gbdt for tree model')
     parser.add_argument('--dataset', type=str, default='selected', help='dataset used for training')
     parser.add_argument('--alg', type=str, default='naive', help='training algorithm')
     parser.add_argument('--epochs', type=int, default=1, help='training epochs for each window')
@@ -29,6 +29,7 @@ def get_args():
     parser.add_argument('--ensemble', type=int, default=1, help='ensemble size')
     parser.add_argument('--window_factor', type=float, default=1, help='factor to multiply window size')
     parser.add_argument('--missing_fill', type=str, default='knn2', help='method to fill missing value')
+    parser.add_argument('--log_dir', type=str, default='./logs/', help='repo to store logging file')
     parser.add_argument('--device', type=str, default='cpu', help='device to train')
     parser.add_argument('--init_seed', type=int, default=0, help='initial random seed')
     
@@ -50,6 +51,14 @@ def compute_result(net, window_x, window_y, task, tree=False):
         else:
             out = net(window_x).reshape(-1).detach()
         loss = torch.mean(torch.square(out - window_y))
+        return loss.item()
+    
+def compute_result_constant(constant_output, window_x, window_y, task):
+    if task == "classification":
+        acc = (window_y == constant_output).sum().item()/window_y.shape[0]
+        return 1-acc
+    else:
+        loss = torch.mean(torch.square(window_y - constant_output))
         return loss.item()
     
 def compute_result_ensemble(net_ensemble, cnt, window_x, window_y, task, tree=False):
@@ -129,15 +138,19 @@ def train_naive(input, target, window_size, task, net, args):
         else:
             criterion = nn.MSELoss().to(device)
             target = target.float()
-
+    constant_output = 0
     for ind in range(0,target.shape[0], window_size):
         window_x = input[ind:ind+window_size].float()
         window_y = target[ind:ind+window_size]
         if torch.isnan(window_x).any():
             window_x = fill_missing_value(window_x, args.missing_fill)
         if ind > 0:
-            result = compute_result(net, window_x, window_y, task, tree=(args.model=="tree"))
-            result_record.append(result)
+            try:
+                result = compute_result(net, window_x, window_y, task, tree=(args.model=="tree"))
+                result_record.append(result)
+            except:
+                result = compute_result_constant(constant_output, window_x, window_y, task)
+                result_record.append(result)
         length = window_y.shape[0]
         for epoch in range(args.epochs):
             if args.model == "mlp":
@@ -152,7 +165,10 @@ def train_naive(input, target, window_size, task, net, args):
                     loss.backward()
                     optimizer.step()
             else:
-                net.fit(window_x, window_y)
+                try:
+                    net.fit(window_x, window_y)
+                except:
+                    constant_output = window_y[0]
                 break # no epoch needed in tree model
 
     logger.info(result_record)
@@ -436,12 +452,12 @@ np.random.seed(seed)
 torch.manual_seed(seed)
 random.seed(seed)
 
-mkdirs("logs/")
+mkdirs(args.log_dir)
 
 for handler in logging.root.handlers[:]:
     logging.root.removeHandler(handler)
 
-log_file_name = 'logs/experiment_log-%s.log' % (datetime.datetime.now().strftime("%Y-%m-%d-%H:%M-%S"))
+log_file_name = '%sexperiment_log-%s.log' % (args.log_dir,datetime.datetime.now().strftime("%Y-%m-%d-%H:%M-%S"))
 
 logging.basicConfig(
     filename=log_file_name,
