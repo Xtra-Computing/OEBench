@@ -109,11 +109,11 @@ def compute_result_ensemble(net_ensemble, cnt, window_x, window_y, task, tree=Fa
 def fill_missing_value(window_x, missing_fill):
     if missing_fill.startswith("knn"):
         num = eval(missing_fill[3:])
-        imp = KNNImputer(n_neighbors=num, weights="uniform")
+        imp = KNNImputer(n_neighbors=num, weights="uniform", keep_empty_features=True)
         filled = imp.fit_transform(window_x.numpy())
         return torch.tensor(filled)
     elif missing_fill == "regression":
-        imp = IterativeImputer()
+        imp = IterativeImputer(keep_empty_features=True)
         filled = imp.fit_transform(window_x.numpy())
         return torch.tensor(filled)
     elif missing_fill == "avg":
