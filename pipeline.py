@@ -1207,8 +1207,6 @@ def run_pipeline(dataset_prefix_list, done):
             
             current_concept_drift_stats.to_csv(dataset_path_prefix + '/concept_drift_stats.csv', mode='w')
             
-            done.append(dataset_path_prefix)
-            logger.info(done)
         except:
             pass
             #continue
@@ -1223,8 +1221,6 @@ def run_pipeline(dataset_prefix_list, done):
             
         current_concept_drift_stats.to_csv(dataset_path_prefix + '/concept_drift_stats.csv', mode='w')
         '''
-        done.append(dataset_path_prefix)
-        logger.info(done)
         
         adwin, ddm, eddm, ave, adwin_warning, ddm_warning, eddm_warning, warning_ave = concept_drift(task, data_onehot_nonnull, target_data_nonnull, window_size, window_count)
         
