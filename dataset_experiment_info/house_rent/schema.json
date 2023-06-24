@@ -1,9 +1,0 @@
-{
-    "numerical": [],
-    "categorical": ["Floor", "Area Type", "City", "Furnishing Status", "Tenant Preferred", "Point of Contact"],
-    "target": ["Rent"],
-    "timestamp": ["Posted On"],
-    "null": [],
-    "window size": 499,
-    "unnecessary": ["Area Locality"]
-}

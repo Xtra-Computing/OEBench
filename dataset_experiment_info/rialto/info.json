@@ -1,5 +1,5 @@
 {
     "schema": "schema.json",
-    "data": "dataset/usp/NOAA.csv",
+    "data": "dataset/usp/rialto.csv",
     "task": "classification"
 }
