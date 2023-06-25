@@ -479,9 +479,12 @@ for dataset_path_prefix in selected_dataset:
     data_path, schema_path, task = schema_parser(dataset_path_prefix)
 
     input, target, window_size, task, column_count, output_dim = data_preprocessing(dataset_path_prefix, data_path, schema_path, task, logger, delete_null_target=True)
-
+    input = input.astype(float)
+    target = target.astype(float)
     input = torch.tensor(input.values).to(device)
     target = torch.tensor(target.values).to(device)
+    if task == "classification":
+        target = target.long()
     input_avg = torch.nanmean(input[:window_size],dim=0).unsqueeze(0)
     input_std = torch.tensor(np.nanstd(input[:window_size].numpy(),axis=0)).unsqueeze(0) + 0.1
     input = (input-input_avg)/input_std
