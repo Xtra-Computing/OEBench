@@ -10,6 +10,9 @@ columns = file.columns
 
 basic_info = file[['size', 'type', 'task', '#columns']]
 
+basic_info_one_hot = pd.get_dummies(basic_info, columns=['task', 'type'])
+basic_info_one_hot.head()
+
 mean = np.mean(basic_info_one_hot, axis=0)
 std = np.std(basic_info_one_hot, axis=0)
 standarized_basic_info_one_hot = (basic_info_one_hot - mean) / std
@@ -71,7 +74,7 @@ combined_pca_features = pd.concat([pca_basic_info, pca_missing_value_features, p
 from sklearn.cluster import KMeans
 
 k = 5  # Choose the desired number of clusters
-kmeans = KMeans(n_clusters=k, random_state=42)
+kmeans = KMeans(n_clusters=k)
 kmeans.fit(combined_pca_features)
 
 print(kmeans.labels_)
