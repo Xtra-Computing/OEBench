@@ -20,7 +20,7 @@ def get_args():
     parser.add_argument('--gbdt', type=int, default=0, help='whether to use gbdt for tree model')
     parser.add_argument('--dataset', type=str, default='selected', help='dataset used for training')
     parser.add_argument('--alg', type=str, default='naive', help='training algorithm')
-    parser.add_argument('--epochs', type=int, default=1, help='training epochs for each window')
+    parser.add_argument('--epochs', type=int, default=10, help='training epochs for each window')
     parser.add_argument('--batch_size', type=int, default=64, help='batch size')
     parser.add_argument('--lr', type=float, default=0.01, help='learning rate')
     parser.add_argument('--layers', type=int, default=3, help='number of layers to test model heaviness')
