@@ -126,6 +126,9 @@ Please refer to `run.sh` as an example.
 | `device` | Specify the device to run the program, default = `cpu`. |
 | `init_seed` | The initial seed, default = `0`. |
 
+## Some repos we refer to
 
-
+- https://github.com/Minqi824/ADBench
+- https://github.com/messaoudia/AdaptiveRandomForest
+- https://github.com/moskomule/ewc.pytorch
 
