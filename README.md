@@ -109,5 +109,29 @@ The `run_pipeline` function iterates through each dataset path prefix in the `da
 After processing each dataset, the function saves the calculated statistics in separate CSV files within each dataset's subfolder. Additionally, the `overall_stats.csv` file is generated, containing aggregated statistics for all datasets.
 
 
+# Run our benchmark of selected datasets
+
+Please refer to `run.sh` as an example. 
+
+| Parameter                      | Description                                 |
+| ----------------------------- | ---------------------------------------- |
+| `model` | The model architecture. Options: `mlp`, `tree`. Default = `mlp`. |
+| `gbdt` | Whether to use gbdt for tree model. Options: `0`, `1`. Default = `0`. |
+| `dataset` | Dataset to use. Options: `selected` or others from the `pipeline.py` (like `dataset_experiment_info/airlines`, etc). Default = `selected`. |
+| `alg` | The training algorithm. Options: `naive`, `ewc`, `lwf`, `icarl`, `sea`, `arf`. Default = `naive`. |
+| `lr` | Learning rate for MLP models, default = `0.01`. |
+| `batch-size` | Batch size for MLP models, default = `64`. |
+| `epochs` | Number of training epochs in local window for MLP models, default = `10`. |
+| `layers` | The number of layers in MLP models, default = `3`. |
+| `reg` | The regularization factor, default = `1`. |
+| `buffer` | The number of examplars allowed to store, default = `100`. |
+| `ensemble` | The ensemble size for GBDT and SEA, default = `5`. |
+| `window-factor` | The factor to multiply the default window size, default = `1`. |
+| `missing-fill` | The method to fill missing value. Options: `knn_` (`_` is the number of K in KNN), `regression`, `avg`, `zero`. Default = `knn2`. |
+| `logdir` | The path to store the logs, default = `./logs/`. |
+| `device` | Specify the device to run the program, default = `cpu`. |
+| `init_seed` | The initial seed, default = `0`. |
+
+
 
 
