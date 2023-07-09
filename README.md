@@ -1,10 +1,12 @@
-# Data processing pipeline under open environment setting
+# StreamBench
+
+## Data processing pipeline under open environment setting
 
 This data processing pipeline is specifically designed for open environment learning, providing a comprehensive analysis of datasets, including missing values statistics, anomaly detection, multi-dimensional and one-dimensional drift detection, and concept drift detection. The pipeline is designed to process multiple datasets and provide a detailed report on various metrics.
 
 The whole datasets can be downloaded from https://drive.google.com/file/d/1m7eKbycaEh38OxB7gJibUZ2kNqzVzYMf/view?usp=sharing. 
 
-## Dependencies
+### Dependencies
 
 This project requires the following Python packages:
 
@@ -28,7 +30,7 @@ This project requires the following Python packages:
 If `import keras` reports error in ADBench, please replace it with `import tensorflow.keras`.
 
 
-## Usage
+### Usage
 
 1. Prepare `info.json` and `schema.json` for your datasets and place them in a folder named `dataset_experiment_info` in the same directory as this script. For each dataset, create a subfolder with the dataset's name.
 
@@ -41,7 +43,7 @@ If `import keras` reports error in ADBench, please replace it with `import tenso
 python pipeline.py
 ```
 
-## Adding a New Dataset
+### Adding a New Dataset
 
 To add a new dataset to the pipeline, follow these steps:
 
@@ -80,14 +82,14 @@ Template of `info.json` of a dataset is as follows:
 }
 ```
 
-## Function: run_pipeline
+### Function: run_pipeline
 
-### Parameters
+#### Parameters
 
 - `dataset_prefix_list`: A list of dataset path prefixes to process.
 - `done`: A list of already processed datasets.
 
-### Description
+#### Description
 
 The `run_pipeline` function iterates through each dataset path prefix in the `dataset_prefix_list` and processes the dataset. For each dataset, the function performs the following steps:
 
@@ -101,7 +103,7 @@ The `run_pipeline` function iterates through each dataset path prefix in the `da
 After processing each dataset, the function saves the calculated statistics in separate CSV files within each dataset's subfolder. Additionally, the `overall_stats.csv` file is generated, containing aggregated statistics for all datasets.
 
 
-# Run our benchmark of selected datasets (or other specified datasets)
+## Run our benchmark of selected datasets (or other specified datasets)
 
 Please refer to `run.sh` as an example. 
 
@@ -117,7 +119,7 @@ Please refer to `run.sh` as an example.
 | `layers` | The number of layers in MLP models, default = `3`. |
 | `reg` | The regularization factor, default = `1`. |
 | `buffer` | The number of examplars allowed to store, default = `100`. |
-| `ensemble` | The ensemble size for GBDT and SEA, default = `5`. |
+| `ensemble` | The ensemble size for GBDT and SEA, default = `1`. |
 | `window-factor` | The factor to multiply the default window size, default = `1`. |
 | `missing-fill` | The method to fill missing value. Options: `knn_` (`_` is the number of K in KNN), `regression`, `avg`, `zero`. Default = `knn2`. |
 | `logdir` | The path to store the logs, default = `./logs/`. |
