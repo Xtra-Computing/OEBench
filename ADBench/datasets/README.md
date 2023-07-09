@@ -1,5 +1,3 @@
-### The dataset folder is too large. If needed, it can be downloaded from https://github.com/Minqi824/ADBench
-
 ### Overview
 In addition to the tabular benchmark datasets provided in [classical directory](https://github.com/Minqi824/ADBench/tree/main/datasets/Classical).
 We provide more details on the generation of the 10 CV/NLP datasets as below.
