@@ -4,14 +4,6 @@ This data processing pipeline is specifically designed for open environment lear
 
 The whole datasets can be downloaded from https://drive.google.com/file/d/1m7eKbycaEh38OxB7gJibUZ2kNqzVzYMf/view?usp=sharing. 
 
-## Table of Contents
-
-- [Dependencies](#dependencies)
-- [Usage](#usage)
-- [Adding a New Dataset](#adding-a-new-dataset)
-- [Function: run_pipeline](#function-run_pipeline)
-
-
 ## Dependencies
 
 This project requires the following Python packages:
@@ -109,7 +101,7 @@ The `run_pipeline` function iterates through each dataset path prefix in the `da
 After processing each dataset, the function saves the calculated statistics in separate CSV files within each dataset's subfolder. Additionally, the `overall_stats.csv` file is generated, containing aggregated statistics for all datasets.
 
 
-# Run our benchmark of selected datasets
+# Run our benchmark of selected datasets (or other specified datasets)
 
 Please refer to `run.sh` as an example. 
 
