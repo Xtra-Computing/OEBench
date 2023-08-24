@@ -1,4 +1,4 @@
-# StreamBench
+# OEBench
 
 ## Data processing pipeline under open environment setting
 
