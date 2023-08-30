@@ -1,6 +1,8 @@
-# OEBench
+# OEBench: Investigating Open Environment Challenges in Real-World Relational Data Streams
 
-## Data processing pipeline under open environment setting
+![Framework](https://github.com/sjtudyq/OEBench/tree/main/figures/flowchart.png)
+
+## Open environment statistics extraction pipeline
 
 This data processing pipeline is specifically designed for open environment learning, providing a comprehensive analysis of datasets, including missing values statistics, anomaly detection, multi-dimensional and one-dimensional drift detection, and concept drift detection. The pipeline is designed to process multiple datasets and provide a detailed report on various metrics.
 
@@ -43,7 +45,7 @@ If `import keras` reports error in ADBench, please replace it with `import tenso
 python pipeline.py
 ```
 
-### Adding a New Dataset
+### Adding a new dataset
 
 To add a new dataset to the pipeline, follow these steps:
 
