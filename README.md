@@ -1,6 +1,10 @@
 # OEBench
 
-This is the code for our paper [OEBench: Investigating Open Environment Challenges in Real-World Relational Data Streams](https://arxiv.org/abs/2308.15059). We build a benchmark to investigate open environment challenges in 55 real-world relational streaming datasets. 
+This is the code for our paper [OEBench: Investigating Open Environment Challenges in Real-World Relational Data Streams](https://arxiv.org/abs/2308.15059).
+
+Relational datasets are widespread in real-world scenarios and are usually delivered in a streaming fashion. This type of data stream can present unique challenges, such as distribution drifts, outliers, emerging classes, and changing features, which have recently been described as [open environment](https://academic.oup.com/nsr/article/9/8/nwac123/6626031) challenges for machine learning. 
+
+We develop an Open Environment Benchmark named **OEBench** to evaluate open environment challenges in relational data streams. Specifically, we investigate 55 real-world streaming datasets and establish that open environment scenarios are indeed widespread in real-world datasets, which presents significant challenges for stream learning algorithms. 
 
 ![](figures/flowchart.png?raw=true)
 
