@@ -1,6 +1,8 @@
-# OEBench: Investigating Open Environment Challenges in Real-World Relational Data Streams
+# OEBench
 
-![Framework](https://github.com/sjtudyq/OEBench/tree/main/figures/flowchart.png)
+This project builds a benchmark to investigate open environment challenges in 55 real-world relational data streams. 
+
+![](figures/flowchart.png?raw=true)
 
 ## Open environment statistics extraction pipeline
 
@@ -103,6 +105,11 @@ The `run_pipeline` function iterates through each dataset path prefix in the `da
 6. Detect concept drift using the PERM, ADWIN, DDM and EDDM method.
 
 After processing each dataset, the function saves the calculated statistics in separate CSV files within each dataset's subfolder. Additionally, the `overall_stats.csv` file is generated, containing aggregated statistics for all datasets.
+
+### Clustering visualization
+`cluster.py` visualizes the clusters of datasets according to our calculated statistics for three open environment problems (missing values, drifts, outliers). The purpose is to select representative datasets for further experiments on 10 stream learning algorithms.
+
+![](figures/cluster.pdf?raw=true)
 
 
 ## Run our benchmark of selected datasets (or other specified datasets)
