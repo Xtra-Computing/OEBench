@@ -1,6 +1,6 @@
 # OEBench
 
-This project builds a benchmark to investigate open environment challenges in 55 real-world relational data streams. 
+This is the code for our paper [OEBench: Investigating Open Environment Challenges in Real-World Relational Data Streams](https://arxiv.org/abs/2308.15059). We build a benchmark to investigate open environment challenges in 55 real-world relational streaming datasets. 
 
 ![](figures/flowchart.png?raw=true)
 
@@ -141,3 +141,15 @@ Please refer to `run.sh` as an example.
 - https://github.com/messaoudia/AdaptiveRandomForest
 - https://github.com/moskomule/ewc.pytorch
 
+## Citation
+If you find this repository useful, please cite our paper:
+
+```
+@misc{diao2023oebench,
+      title={OEBench: Investigating Open Environment Challenges in Real-World Relational Data Streams}, 
+      author={Yiqun Diao and Yutong Yang and Qinbin Li and Bingsheng He and Mian Lu},
+      year={2023},
+      eprint={2308.15059},
+      archivePrefix={arXiv}
+}
+```
