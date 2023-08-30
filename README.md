@@ -109,7 +109,7 @@ After processing each dataset, the function saves the calculated statistics in s
 ### Clustering visualization
 `cluster.py` visualizes the clusters of datasets according to our calculated statistics for three open environment problems (missing values, drifts, outliers). The purpose is to select representative datasets for further experiments on 10 stream learning algorithms.
 
-![](figures/cluster.pdf?raw=true)
+![](figures/cluster.png?raw=true)
 
 
 ## Run our benchmark of selected datasets (or other specified datasets)
