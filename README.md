@@ -34,6 +34,7 @@ This project requires the following Python packages:
 - catboost
 - copulas
 - menelaus (need Python >= 3.9)
+- pytorch-tabnet
 
 If `import keras` reports error in ADBench, please replace it with `import tensorflow.keras`.
 
