@@ -1,7 +1,7 @@
 from pipeline import *
 import copy
-from ewc import *
 from model import *
+from ewc import *
 from arf import *
 import torch
 from sklearn.impute import IterativeImputer, KNNImputer
@@ -13,6 +13,7 @@ import argparse
 import time
 import random
 import torch.nn.functional as F
+from pytorch_tabnet.tab_model import TabNetClassifier, TabNetRegressor
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -130,7 +131,7 @@ def fill_missing_value(window_x, missing_fill):
 def train_naive(input, target, window_size, task, net, args):
     device = args.device
     result_record = []
-    if args.model != "tree":
+    if args.model not in ("tree", "tabnet"):
         optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, net.parameters()), lr=args.lr)
         if task == "classification":
             criterion = nn.CrossEntropyLoss().to(device)
@@ -146,7 +147,7 @@ def train_naive(input, target, window_size, task, net, args):
             window_x = fill_missing_value(window_x, args.missing_fill)
         if ind > 0:
             try:
-                result = compute_result(net, window_x, window_y, task, tree=(args.model=="tree"))
+                result = compute_result(net, window_x, window_y, task, tree=(args.model in ("tree", "tabnet")))
                 result_record.append(result)
             except:
                 result = compute_result_constant(constant_output, window_x, window_y, task)
@@ -287,10 +288,10 @@ def train_icarl(input, target, window_size, task, net, args):
     optimizer = torch.optim.SGD(filter(lambda p: p.requires_grad, net.parameters()), lr=args.lr)
     if task == "classification":
         criterion = nn.CrossEntropyLoss().to(device)
-        target = torch.LongTensor(target)
     else:
         criterion = nn.MSELoss().to(device)
         target = target.float()
+    net.to(device)
 
     buffer_class = int(args.buffer/args.output_dim)
     for ind in range(0,target.shape[0], window_size):
@@ -304,8 +305,8 @@ def train_icarl(input, target, window_size, task, net, args):
         length = window_y.shape[0]
         for epoch in range(args.epochs):
             for batch_ind in range(0,length,args.batch_size):
-                x = window_x[batch_ind:batch_ind+args.batch_size]
-                y = window_y[batch_ind:batch_ind+args.batch_size]
+                x = window_x[batch_ind:batch_ind+args.batch_size].to(device)
+                y = window_y[batch_ind:batch_ind+args.batch_size].to(device)
                 optimizer.zero_grad()
                 out = net(x)
                 if task=="regression":
@@ -313,6 +314,7 @@ def train_icarl(input, target, window_size, task, net, args):
                 loss = criterion(out, y)
                 if ind>0:
                     out_e = net(x_example)
+                    y_example = y_example.to(device)
                     loss += criterion(out_e, y_example)
                 loss.backward()
                 optimizer.step()
@@ -485,8 +487,8 @@ for dataset_path_prefix in selected_dataset:
     target = torch.tensor(target.values).to(device)
     if task == "classification":
         target = target.long()
-    input_avg = torch.nanmean(input[:window_size],dim=0).unsqueeze(0)
-    input_std = torch.tensor(np.nanstd(input[:window_size].numpy(),axis=0)).unsqueeze(0) + 0.1
+    input_avg = torch.nanmean(input[:window_size],dim=0).unsqueeze(0).to(device)
+    input_std = torch.tensor(np.nanstd(input[:window_size].cpu().numpy(),axis=0)).unsqueeze(0).to(device) + 0.1
     input = (input-input_avg)/input_std
     target = target.reshape(-1)
     if task == "regression":
@@ -527,7 +529,11 @@ for dataset_path_prefix in selected_dataset:
             else:
                 net = DecisionTreeRegressor()
                 net_ensemble = [DecisionTreeRegressor() for i in range(args.ensemble)]
-
+    elif args.model == "tabnet":
+        if task == "classification":
+            net = TabNetClassifier()
+        else:
+            net = TabNetRegressor()
     start_time = time.time()
 
     if args.alg == "naive":
