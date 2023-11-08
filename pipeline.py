@@ -96,7 +96,7 @@ def data_preprocessing(dataset_path_prefix, data_path, schema_path, task, logger
     logger.info("replaced with null")
 
     if delete_null_target:
-        data = data.dropna(subset=[target])
+        data = data.dropna(subset=target)
     
     logger.info("start sorting")
     try:
@@ -123,6 +123,9 @@ def data_preprocessing(dataset_path_prefix, data_path, schema_path, task, logger
         #logger.info(target_data[target[0]])
         target_data[target[0]] = pd.factorize(target_data[target[0]])[0]
         #logger.info(target_data)
+        output_dim = max(target_data[target[0]])+1
+    else:
+        output_dim = 1
     
     data = data.drop(unnecessary, axis=1)
     data = data.drop(timestamp, axis=1)
@@ -136,7 +139,7 @@ def data_preprocessing(dataset_path_prefix, data_path, schema_path, task, logger
     logger.info(new_columns)
     new_column_count = new_columns.shape[0]
     if delete_null_target:
-        return pd.DataFrame(data_one_hot), pd.DataFrame(target_data)
+        return pd.DataFrame(data_one_hot), pd.DataFrame(target_data), window_size, task, new_column_count, output_dim
     
     #try:
     #    data_onehot_nonnull_path = dataset_path_prefix+'/onehot_nonnull.csv'
