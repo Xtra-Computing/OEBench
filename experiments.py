@@ -14,6 +14,7 @@ import time
 import random
 import torch.nn.functional as F
 from pytorch_tabnet.tab_model import TabNetClassifier, TabNetRegressor
+from armnet import *
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -145,19 +146,31 @@ def train_naive(input, target, window_size, task, net, args):
         window_y = target[ind:ind+window_size]
         if torch.isnan(window_x).any():
             window_x = fill_missing_value(window_x, args.missing_fill)
+        if args.model == "armnet":
+            id = torch.LongTensor(range(window_x.shape[1]))
         if ind > 0:
             try:
-                result = compute_result(net, window_x, window_y, task, tree=(args.model in ("tree", "tabnet")))
+                if args.model == "armnet":
+                    x_tmp = dict({})
+                    x_tmp['value'] = window_x
+                    x_tmp['id'] = id.repeat((window_x.shape[0],1))
+                result = compute_result(net, x_tmp, window_y, task, tree=(args.model in ("tree", "tabnet")))
                 result_record.append(result)
             except:
                 result = compute_result_constant(constant_output, window_x, window_y, task)
+                logger.info("abnormal")
                 result_record.append(result)
         length = window_y.shape[0]
         for epoch in range(args.epochs):
-            if args.model == "mlp":
+            if args.model in ("mlp", "armnet"):
                 for batch_ind in range(0,length,args.batch_size):
                     x = window_x[batch_ind:batch_ind+args.batch_size]
                     y = window_y[batch_ind:batch_ind+args.batch_size]
+                    if args.model == "armnet":
+                        x_tmp = dict({})
+                        x_tmp['value'] = x
+                        x_tmp['id'] = id.repeat((x.shape[0],1))
+                        x = x_tmp
                     optimizer.zero_grad()
                     out = net(x)
                     if task=="regression":
@@ -165,6 +178,15 @@ def train_naive(input, target, window_size, task, net, args):
                     loss = criterion(out, y)
                     loss.backward()
                     optimizer.step()
+            elif args.model == "tabnet":
+                try:
+                    window_x = window_x.numpy()
+                    window_y = window_y.numpy()
+                except:
+                    pass
+                if task == "regression":
+                    window_y = window_y.reshape(-1,1)
+                net.fit(window_x, window_y, max_epochs=10)
             else:
                 try:
                     net.fit(window_x, window_y)
@@ -534,6 +556,9 @@ for dataset_path_prefix in selected_dataset:
             net = TabNetClassifier()
         else:
             net = TabNetRegressor()
+    elif args.model == "armnet":
+        net = ARMNetModel(column_count, column_count, column_count, 2, 1.7, 32,
+                    args.layers, 16, 0, False, args.layers, 16, noutput=output_dim)
     start_time = time.time()
 
     if args.alg == "naive":
