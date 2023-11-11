@@ -187,6 +187,7 @@ def train_naive(input, target, window_size, task, net, args):
                 if task == "regression":
                     window_y = window_y.reshape(-1,1)
                 net.fit(window_x, window_y, max_epochs=10)
+                break
             else:
                 try:
                     net.fit(window_x, window_y)
