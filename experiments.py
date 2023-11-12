@@ -154,7 +154,9 @@ def train_naive(input, target, window_size, task, net, args):
                     x_tmp = dict({})
                     x_tmp['value'] = window_x
                     x_tmp['id'] = id.repeat((window_x.shape[0],1))
-                result = compute_result(net, x_tmp, window_y, task, tree=(args.model in ("tree", "tabnet")))
+                    result = compute_result(net, x_tmp, window_y, task, tree=(args.model in ("tree", "tabnet")))
+                else:
+                    result = compute_result(net, window_x, window_y, task, tree=(args.model in ("tree", "tabnet")))
                 result_record.append(result)
             except:
                 result = compute_result_constant(constant_output, window_x, window_y, task)
@@ -186,7 +188,7 @@ def train_naive(input, target, window_size, task, net, args):
                     pass
                 if task == "regression":
                     window_y = window_y.reshape(-1,1)
-                net.fit(window_x, window_y, max_epochs=10)
+                net.fit(window_x, window_y, batch_size=args.batch_size, virtual_batch_size=args.batch_size, max_epochs=args.epochs)
                 break
             else:
                 try:
@@ -532,9 +534,9 @@ for dataset_path_prefix in selected_dataset:
             hidden_layers = [32, 32, 16, 16, 8]
         elif args.layers == 7:
             hidden_layers = [32, 32, 32, 16, 16, 16, 8]
-        net = MLP(column_count, hidden_layers, output_dim)
-        net_copy = MLP(column_count, hidden_layers, output_dim)
-        net_ensemble = [MLP(column_count, hidden_layers, output_dim) for i in range(args.ensemble)]
+        net = FcNet(column_count, hidden_layers, output_dim)
+        net_copy = FcNet(column_count, hidden_layers, output_dim)
+        net_ensemble = [FcNet(column_count, hidden_layers, output_dim) for i in range(args.ensemble)]
     elif args.alg == "arf" and args.model == "tree":
         net = AdaptiveRandomForest(nb_features=output_dim, nb_trees=args.ensemble, pretrain_size=window_size)
     elif args.model == "tree":
@@ -554,9 +556,9 @@ for dataset_path_prefix in selected_dataset:
                 net_ensemble = [DecisionTreeRegressor() for i in range(args.ensemble)]
     elif args.model == "tabnet":
         if task == "classification":
-            net = TabNetClassifier()
+            net = TabNetClassifier(seed=args.init_seed)
         else:
-            net = TabNetRegressor()
+            net = TabNetRegressor(seed=args.init_seed)
     elif args.model == "armnet":
         net = ARMNetModel(column_count, column_count, column_count, 2, 1.7, 32,
                     args.layers, 16, 0, False, args.layers, 16, noutput=output_dim)
