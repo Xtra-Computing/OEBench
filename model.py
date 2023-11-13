@@ -4,7 +4,7 @@ import torch.nn.functional as F
 import math
 import torchvision.models as models
 
-class MLP(nn.Module):
+class FcNet(nn.Module):
     """
     Fully connected network for MNIST classification
     """
