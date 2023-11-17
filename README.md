@@ -6,7 +6,7 @@ Relational datasets are widespread in real-world scenarios and are usually deliv
 
 We develop an Open Environment Benchmark named **OEBench** to evaluate open environment challenges in relational data streams. Specifically, we investigate 55 real-world streaming datasets and establish that open environment scenarios are indeed widespread in real-world datasets, which presents significant challenges for stream learning algorithms. 
 
-![](figures/flowchart.png?raw=true)
+![](figures/flowchart2.png?raw=true)
 
 ## Open environment statistics extraction pipeline
 
