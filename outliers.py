@@ -1,12 +1,12 @@
 # Use StreamAD library: https://github.com/Fengrui-Liu/StreamAD
-# The first three algorithms have lower scores for outliers, while the last three algorithms have higher scores for outliers. Thus, the AUC ROC score x should be 1-x for the first three algorithms.
+# The first three algorithms have lower scores for outliers, while the others have higher scores for outliers. Thus, the AUC ROC score x should be 1-x for the first three algorithms.
 # To test these stream outlier dectors, just run `python outliers.py`.
 
 import numpy as np
 import logging
 import datetime
 from pipeline import *
-from streamad.model import xStreamDetector, RShashDetector, HSTreeDetector, LodaDetector, OCSVMDetector, RrcfDetector
+from streamad.model import xStreamDetector, RShashDetector, HSTreeDetector, LodaDetector, RrcfDetector
 from sklearn.metrics import roc_auc_score
 
 def outlier_detector_marker(data):
@@ -66,7 +66,7 @@ if __name__ == "__main__":
         if dataset_path_prefix in done:
             continue
         
-        streamad_models = [xStreamDetector(depth=10), RShashDetector(components_num=10), HSTreeDetector(), LodaDetector(), OCSVMDetector(), RrcfDetector()]
+        streamad_models = [xStreamDetector(depth=10), RShashDetector(components_num=10), HSTreeDetector(), LodaDetector(), RrcfDetector()]
 
         logger.info(dataset_path_prefix)
         try:
