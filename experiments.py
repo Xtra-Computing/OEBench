@@ -15,6 +15,7 @@ import random
 import torch.nn.functional as F
 from pytorch_tabnet.tab_model import TabNetClassifier, TabNetRegressor
 from armnet import *
+from skmultiflow.data import SEAGenerator, HyperplaneGenerator, STAGGERGenerator, RandomRBFGeneratorDrift, LEDGeneratorDrift, WaveformGenerator
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -496,6 +497,57 @@ logger.setLevel(logging.INFO)
 
 if args.dataset == "selected":
     selected_dataset = ['dataset_experiment_info/room_occupancy', 'dataset_experiment_info/electricity_prices', 'dataset_experiment_info/insects/incremental_reoccurring_balanced', 'dataset_experiment_info/beijing_multisite/shunyi', 'dataset_experiment_info/tetouan']
+elif args.dataset == "generated":
+    selected_dataset = ["SEAGenerator", "HyperplaneGenerator", "STAGGERGenerator", "RandomRBFGeneratorDrift", "LEDGeneratorDrift", "WaveformGenerator"]
+    generated_dataset = dict({})
+    for i in range(4):
+        stream = SEAGenerator(classification_function = i, balance_classes = False)
+        if i==0:
+            x_total, y_total = stream.next_sample(12500)
+        else:
+            x, y = stream.next_sample(12500)
+            x_total = np.concatenate((x_total,x),axis=0)
+            y_total = np.concatenate((y_total,y),axis=0)
+    generated_dataset["SEAGenerator"] = dict({})
+    generated_dataset["SEAGenerator"]["input"] = x_total
+    generated_dataset["SEAGenerator"]["target"] = y_total
+
+    stream = HyperplaneGenerator(mag_change=0.1)
+    x, y = stream.next_sample(50000)
+    generated_dataset["HyperplaneGenerator"] = dict({})
+    generated_dataset["HyperplaneGenerator"]["input"] = x
+    generated_dataset["HyperplaneGenerator"]["target"] = y
+
+    for i in range(3):
+        stream = STAGGERGenerator(classification_function = i, balance_classes = False)
+        if i==0:
+            x_total, y_total = stream.next_sample(16700)
+        else:
+            x, y = stream.next_sample(16700)
+            x_total = np.concatenate((x_total,x),axis=0)
+            y_total = np.concatenate((y_total,y),axis=0)
+    generated_dataset["STAGGERGenerator"] = dict({})
+    generated_dataset["STAGGERGenerator"]["input"] = x_total
+    generated_dataset["STAGGERGenerator"]["target"] = y_total
+    
+    stream = RandomRBFGeneratorDrift(n_classes=4, change_speed=0.87)
+    x, y = stream.next_sample(50000)
+    generated_dataset["RandomRBFGeneratorDrift"] = dict({})
+    generated_dataset["RandomRBFGeneratorDrift"]["input"] = x
+    generated_dataset["RandomRBFGeneratorDrift"]["target"] = y
+
+    stream = LEDGeneratorDrift(noise_percentage = 0.28,has_noise= True, n_drift_features=4)
+    x, y = stream.next_sample(50000)
+    generated_dataset["LEDGeneratorDrift"] = dict({})
+    generated_dataset["LEDGeneratorDrift"]["input"] = x
+    generated_dataset["LEDGeneratorDrift"]["target"] = y
+
+    stream = WaveformGenerator(has_noise= True)
+    x, y = stream.next_sample(50000)
+    generated_dataset["WaveformGenerator"] = dict({})
+    generated_dataset["WaveformGenerator"]["input"] = x
+    generated_dataset["WaveformGenerator"]["target"] = y
+    
 else:
     selected_dataset = [args.dataset]
 
@@ -503,13 +555,26 @@ device = args.device
 
 for dataset_path_prefix in selected_dataset:
     logger.info(dataset_path_prefix)
-    data_path, schema_path, task = schema_parser(dataset_path_prefix)
+    if args.dataset == "generated":
+        window_size = 500
+        input = generated_dataset[dataset_path_prefix]["input"]
+        target = generated_dataset[dataset_path_prefix]["target"]
+        task = "classification"
+        column_count = input.shape[1]
+        output_dim = np.max(target) + 1
+        input = torch.tensor(input).to(device)
+        target = torch.tensor(target).to(device)
+    else:
+        data_path, schema_path, task = schema_parser(dataset_path_prefix)
 
-    input, target, window_size, task, column_count, output_dim = data_preprocessing(dataset_path_prefix, data_path, schema_path, task, logger, delete_null_target=True)
-    input = input.astype(float)
-    target = target.astype(float)
-    input = torch.tensor(input.values).to(device)
-    target = torch.tensor(target.values).to(device)
+        input, target, window_size, task, column_count, output_dim = data_preprocessing(dataset_path_prefix, data_path, schema_path, task, logger, delete_null_target=True)
+        
+        input = input.astype(float)
+        target = target.astype(float)
+
+        input = torch.tensor(input.values).to(device)
+        target = torch.tensor(target.values).to(device)
+
     if task == "classification":
         target = target.long()
     input_avg = torch.nanmean(input[:window_size],dim=0).unsqueeze(0).to(device)
