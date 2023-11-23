@@ -33,6 +33,8 @@ import logging
 import datetime
 import os
 
+from skmultiflow.data import SEAGenerator, HyperplaneGenerator, STAGGERGenerator, RandomRBFGeneratorDrift, LEDGeneratorDrift, WaveformGenerator
+
 def mkdirs(dirpath):
     try:
         os.makedirs(dirpath)
@@ -1000,7 +1002,58 @@ def concept_drift(task, data, target, window_size, window_count):
 
 
 
-def run_pipeline(dataset_prefix_list, done):
+def run_pipeline(dataset_prefix_list, done, generated=False):   
+    if generated:
+        dataset_prefix_list = ["SEAGenerator", "HyperplaneGenerator", "STAGGERGenerator", "RandomRBFGeneratorDrift", "LEDGeneratorDrift", "WaveformGenerator"]
+        generated_dataset = dict({})
+        for i in range(4):
+            stream = SEAGenerator(classification_function = i, balance_classes = False)
+            if i==0:
+                x_total, y_total = stream.next_sample(12500)
+            else:
+                x, y = stream.next_sample(12500)
+                x_total = np.concatenate((x_total,x),axis=0)
+                y_total = np.concatenate((y_total,y),axis=0)
+        generated_dataset["SEAGenerator"] = dict({})
+        generated_dataset["SEAGenerator"]["input"] = x_total
+        generated_dataset["SEAGenerator"]["target"] = y_total
+
+        stream = HyperplaneGenerator(mag_change=0.1)
+        x, y = stream.next_sample(50000)
+        generated_dataset["HyperplaneGenerator"] = dict({})
+        generated_dataset["HyperplaneGenerator"]["input"] = x
+        generated_dataset["HyperplaneGenerator"]["target"] = y
+
+        for i in range(3):
+            stream = STAGGERGenerator(classification_function = i, balance_classes = False)
+            if i==0:
+                x_total, y_total = stream.next_sample(16700)
+            else:
+                x, y = stream.next_sample(16700)
+                x_total = np.concatenate((x_total,x),axis=0)
+                y_total = np.concatenate((y_total,y),axis=0)
+        generated_dataset["STAGGERGenerator"] = dict({})
+        generated_dataset["STAGGERGenerator"]["input"] = x_total
+        generated_dataset["STAGGERGenerator"]["target"] = y_total
+        
+        stream = RandomRBFGeneratorDrift(n_classes=4, change_speed=0.87)
+        x, y = stream.next_sample(50000)
+        generated_dataset["RandomRBFGeneratorDrift"] = dict({})
+        generated_dataset["RandomRBFGeneratorDrift"]["input"] = x
+        generated_dataset["RandomRBFGeneratorDrift"]["target"] = y
+
+        stream = LEDGeneratorDrift(noise_percentage = 0.28,has_noise= True, n_drift_features=4)
+        x, y = stream.next_sample(50000)
+        generated_dataset["LEDGeneratorDrift"] = dict({})
+        generated_dataset["LEDGeneratorDrift"]["input"] = x
+        generated_dataset["LEDGeneratorDrift"]["target"] = y
+
+        stream = WaveformGenerator(has_noise= True)
+        x, y = stream.next_sample(50000)
+        generated_dataset["WaveformGenerator"] = dict({})
+        generated_dataset["WaveformGenerator"]["input"] = x
+        generated_dataset["WaveformGenerator"]["target"] = y
+
     overall_stats = pd.DataFrame(index=dataset_prefix_list, columns=["size", "#columns", 
                                                                  "ave_rows_with_missing_values_ratio_per_window", "max_rows_with_missing_values_ratio_per_window", 
                                                                  "total_rows_with_missing_values_ratio",
@@ -1027,17 +1080,36 @@ def run_pipeline(dataset_prefix_list, done):
                                                                  "pca_ave_warning_percentage", "pca_max_warning_percentage", 
                                                                  "ave_warning_percentage", "max_warning_percentage",
                                                                  "concept_drift_ratio", "adwin", "ddm", "eddm", "ave", "adwin_warning", "ddm_warning", "eddm_warning", "ave_warning"])
-    
-    
+            
     for dataset_path_prefix in dataset_prefix_list:
         if dataset_path_prefix in done:
             continue
         
         logger.info(dataset_path_prefix)
-        try:
-            data_path, schema_path, task = schema_parser(dataset_path_prefix)
-        except:
-            continue
+        if generated:
+            window_size = 500
+            input = generated_dataset[dataset_path_prefix]["input"]
+            target = generated_dataset[dataset_path_prefix]["target"]
+            task = "classification"
+            column_count = input.shape[1]
+            output_dim = np.max(target) + 1
+            target_data_nonnull = pd.DataFrame(target)
+            data_before_onehot = pd.DataFrame(input)
+            data_onehot_nonnull = pd.DataFrame(input) 
+            original_columns = data_before_onehot.columns
+            row_count = input.shape[0]
+            original_column_count = column_count 
+            new_columns = data_before_onehot.columns
+        else:
+            try:
+                data_path, schema_path, task = schema_parser(dataset_path_prefix)
+            except:
+                continue
+
+            logger.info("start pre-processing")
+        
+            target_data_nonnull, data_before_onehot, data_onehot_nonnull, original_columns, window_size, row_count, original_column_count, new_columns, new_column_count = data_preprocessing(dataset_path_prefix, data_path, schema_path, task, logger)
+            logger.info("preprocessing done")
         
         current_stats = pd.DataFrame(index=dataset_prefix_list, columns=["size", "#columns", 
                                                                     "ave_rows_with_missing_values_ratio_per_window", "max_rows_with_missing_values_ratio_per_window", 
@@ -1066,10 +1138,7 @@ def run_pipeline(dataset_prefix_list, done):
                                                                     "ave_warning_percentage", "max_warning_percentage",
                                                                     "concept_drift_ratio", "adwin", "ddm", "eddm", "ave", "adwin_warning", "ddm_warning", "eddm_warning", "ave_warning"])
         
-        logger.info("start pre-processing")
         
-        target_data_nonnull, data_before_onehot, data_onehot_nonnull, original_columns, window_size, row_count, original_column_count, new_columns, new_column_count = data_preprocessing(dataset_path_prefix, data_path, schema_path, task, logger)
-        logger.info("preprocessing done")
         current_stats.loc[dataset_path_prefix]["size"] = row_count
         current_stats.loc[dataset_path_prefix]["#columns"] = original_column_count
         
@@ -1249,7 +1318,7 @@ def run_pipeline(dataset_prefix_list, done):
         overall_stats.loc[dataset_path_prefix]["ave_warning"] = warning_ave
         
         
-        current_concept_drift_stats.to_csv(dataset_path_prefix + '/menelaus_concept_drift_stats.csv', mode='w')
+        # current_concept_drift_stats.to_csv(dataset_path_prefix + '/menelaus_concept_drift_stats.csv', mode='w')
         
         done.append(dataset_path_prefix)
         logger.info(done)
@@ -1288,5 +1357,5 @@ if __name__ == "__main__":
     #dataset_prefix_list = ['dataset_experiment_info/household']
     #done=['dataset_experiment_info/airbnb', 'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/allstate_claims_severity', 'dataset_experiment_info/bike_sharing_demand', 'dataset_experiment_info/bike_sharing_demand', 'dataset_experiment_info/bike_sharing_demand', 'dataset_experiment_info/rssi', 'dataset_experiment_info/rssi', 'dataset_experiment_info/rssi', 'dataset_experiment_info/noaa', 'dataset_experiment_info/noaa', 'dataset_experiment_info/noaa', 'dataset_experiment_info/KDDCUP99', 'dataset_experiment_info/KDDCUP99', 'dataset_experiment_info/KDDCUP99', 'dataset_experiment_info/electricity_prices', 'dataset_experiment_info/electricity_prices', 'dataset_experiment_info/electricity_prices', 'dataset_experiment_info/tetouan', 'dataset_experiment_info/tetouan', 'dataset_experiment_info/tetouan', 'dataset_experiment_info/italian_city_airquality', 'dataset_experiment_info/italian_city_airquality', 'dataset_experiment_info/italian_city_airquality', 'dataset_experiment_info/powersupply', 'dataset_experiment_info/powersupply', 'dataset_experiment_info/powersupply', 'dataset_experiment_info/taxi_ride_duration', 'dataset_experiment_info/taxi_ride_duration', 'dataset_experiment_info/taxi_ride_duration', 'dataset_experiment_info/room_occupancy', 'dataset_experiment_info/room_occupancy', 'dataset_experiment_info/room_occupancy']
 
-    run_pipeline(dataset_prefix_list, done)
+    run_pipeline(dataset_prefix_list, done, generated=False)
 
