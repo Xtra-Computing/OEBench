@@ -55,10 +55,9 @@ if __name__ == "__main__":
         logger.info("preprocessing done")
 
         data_onehot_nonnull = data_onehot_nonnull.to_numpy().tolist()
-
-        st = time.time()
-
+        
         for model in cluster_models:
+            st = time.time()
             logger.info(model)
             assigned = []
             for x,_ in stream.iter_array(data_onehot_nonnull):
