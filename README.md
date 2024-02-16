@@ -150,11 +150,13 @@ Please refer to `run.sh` as an example.
 If you find this repository useful, please cite our paper:
 
 ```
-@misc{diao2023oebench,
+@article{diao2024oebench,
       title={OEBench: Investigating Open Environment Challenges in Real-World Relational Data Streams}, 
-      author={Yiqun Diao and Yutong Yang and Qinbin Li and Bingsheng He and Mian Lu},
-      year={2023},
-      eprint={2308.15059},
-      archivePrefix={arXiv}
+      author={Diao, Yiqun and Yang, Yutong and Li, Qinbin and He, Bingsheng and Lu, Mian},
+      journal={Proceedings of the VLDB Endowment},
+      volume={17},
+      number={6},
+      year={2024},
+      publisher={VLDB Endowment}
 }
 ```
