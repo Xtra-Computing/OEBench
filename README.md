@@ -156,6 +156,7 @@ If you find this repository useful, please cite our paper:
       journal={Proceedings of the VLDB Endowment},
       volume={17},
       number={6},
+      pages={1283--1296},
       year={2024},
       publisher={VLDB Endowment}
 }
