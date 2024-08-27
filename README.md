@@ -1,5 +1,9 @@
 # OEBench
 
+## Updates
+
+We are building a Python library [PyOE](https://pyoe.xtra.science/home) for data stream machine learning with a few lines. Researchers are welcome to use and give feedbacks! 
+
 This is the code for our paper [OEBench: Investigating Open Environment Challenges in Real-World Relational Data Streams](https://arxiv.org/abs/2308.15059).
 
 Relational datasets are widespread in real-world scenarios and are usually delivered in a streaming fashion. This type of data stream can present unique challenges, such as distribution drifts, outliers, emerging classes, and changing features, which have recently been described as [open environment](https://academic.oup.com/nsr/article/9/8/nwac123/6626031) challenges for machine learning. 
